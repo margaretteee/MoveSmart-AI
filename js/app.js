@@ -359,7 +359,14 @@ class MoveSmartAI {
    * Get timer duration from card
    */
   getTimerDuration(card) {
-    const durationText = card.querySelector('.workout-card__info, .stretch-card__info');
+    // First check data-duration attribute
+    const dataDuration = card.getAttribute('data-duration');
+    if (dataDuration) {
+      return parseInt(dataDuration) * 60; // Convert minutes to seconds
+    }
+    
+    // Fallback: check duration text in card
+    const durationText = card.querySelector('.workout-card__duration, .stretch-card__duration, .workout-card__info, .stretch-card__info');
     if (durationText) {
       const match = durationText.textContent.match(/(\d+)\s*min/i);
       return match ? parseInt(match[1]) * 60 : 300; // Default 5 minutes
