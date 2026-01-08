@@ -1,20 +1,12 @@
 /**
  * MoveSmartAI - Interactive JavaScript
- * Features: Theme toggle, animations, card interactions, and accessibility
+ * Features: Navigation, animations, card interactions, timers, and accessibility
  */
 
 class MoveSmartAI {
   constructor() {
-    this.isLoading = false;
-    this.currentTheme = this.getInitialTheme();
-    
-    // DOM elements
-    this.themeToggle = null;
-    this.featureCards = [];
-    this.loadingElement = null;
-    
-    // Intersection Observer for animations
-    this.animationObserver = null;
+    this.activeSection = 'home';
+    this.timers = new Map();
     
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
@@ -28,498 +20,959 @@ class MoveSmartAI {
    * Initialize the application
    */
   init() {
-    this.cacheDOM();
-    this.bindEvents();
-    this.setupTheme();
-    this.setupAnimations();
-    this.setupAccessibility();
-    this.preloadImages();
-    
-    console.log('🚀 MoveSmartAI initialized');
+    try {
+      console.log('🚀 MoveSmartAI initializing...');
+      
+      this.cacheElements();
+      this.initEventListeners();
+      this.initIntersectionObserver();
+      this.initAccessibilityFeatures();
+      
+      // Track app initialization
+      this.trackUserInteraction('app_initialized', 'page_load');
+      
+      console.log('✅ MoveSmartAI initialized successfully!');
+      
+    } catch (error) {
+      console.error('❌ Error initializing MoveSmartAI:', error);
+      this.handleError('initialization', error);
+    }
   }
   
   /**
    * Cache DOM elements for better performance
    */
-  cacheDOM() {
-    this.themeToggle = document.querySelector('.theme-toggle');
-    this.featureCards = document.querySelectorAll('.feature-card');
-    this.loadingElement = document.querySelector('.loading');
-    this.body = document.body;
-    this.html = document.documentElement;
-  }
-  
-  /**
-   * Bind event listeners
-   */
-  bindEvents() {
-    // Theme toggle
-    if (this.themeToggle) {
-      this.themeToggle.addEventListener('click', () => this.toggleTheme());
-    }
+  cacheElements() {
+    // Navigation
+    this.navLinks = document.querySelectorAll('[data-nav]');
+    this.backBtns = document.querySelectorAll('.back-btn');
+    this.logo = document.querySelector('.logo');
     
-    // Feature card interactions
-    this.featureCards.forEach((card, index) => {
-      // Click/Enter handler
-      card.addEventListener('click', (e) => this.handleCardClick(e, index));
-      card.addEventListener('keydown', (e) => this.handleCardKeydown(e, index));
-      
-      // Mouse events for enhanced interactions
-      card.addEventListener('mouseenter', () => this.handleCardHover(card, true));
-      card.addEventListener('mouseleave', () => this.handleCardHover(card, false));
+    // Main sections
+    this.sections = {
+      home: document.querySelector('.main'),
+      workouts: document.querySelector('#workouts'),
+      stretches: document.querySelector('#stretches'),
+      tips: document.querySelector('#tips')
+    };
+    
+    // Log sections for debugging
+    console.log('Sections initialized:', this.sections);
+    
+    // Ensure all page sections start hidden except home
+    Object.keys(this.sections).forEach(key => {
+      const section = this.sections[key];
+      if (section && key !== 'home') {
+        section.style.display = 'none';
+        section.classList.remove('active');
+      }
     });
     
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => this.handleGlobalKeydown(e));
+    // Cards
+    this.cards = document.querySelectorAll('.feature-card, .workout-card, .stretch-card, .tips-card');
     
-    // Performance monitoring
-    window.addEventListener('load', () => this.trackLoadTime());
+    // Timer elements
+    this.timerModal = document.querySelector('#timer-modal');
+    this.challengeTimerModal = document.querySelector('#challenge-timer-modal');
+    this.miniTimer = document.querySelector('#mini-timer');
     
-    // Handle reduced motion preference
-    this.handleReducedMotion();
-  }
-  
-  /**
-   * Setup theme system
-   */
-  setupTheme() {
-    this.applyTheme(this.currentTheme);
-    this.updateThemeToggleIcon();
+    // Modals
+    this.modals = document.querySelectorAll('[role="dialog"], .timer-modal');
     
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      if (!localStorage.getItem('theme')) {
-        this.currentTheme = e.matches ? 'dark' : 'light';
-        this.applyTheme(this.currentTheme);
-        this.updateThemeToggleIcon();
-      }
+    // Timer close buttons
+    this.timerCloseBtn = document.querySelector('.timer-modal__close');
+    this.challengeTimerCloseBtn = document.querySelector('.challenge-timer-modal__close');
+    
+    console.log('Timer elements found:', {
+      timerModal: !!this.timerModal,
+      challengeTimerModal: !!this.challengeTimerModal,
+      timerCloseBtn: !!this.timerCloseBtn,
+      challengeTimerCloseBtn: !!this.challengeTimerCloseBtn
     });
   }
   
   /**
-   * Get initial theme preference
+   * Initialize event listeners
    */
-  getInitialTheme() {
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme) return savedTheme;
+  initEventListeners() {
+    // Navigation
+    this.navLinks.forEach(link => {
+      link.addEventListener('click', this.handleNavigation.bind(this));
+    });
     
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
-  
-  /**
-   * Toggle between light and dark themes
-   */
-  toggleTheme() {
-    this.currentTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-    this.applyTheme(this.currentTheme);
-    this.updateThemeToggleIcon();
-    
-    // Save preference
-    localStorage.setItem('theme', this.currentTheme);
-    
-    // Announce to screen readers
-    this.announceToScreenReader(`Switched to ${this.currentTheme} mode`);
-  }
-  
-  /**
-   * Apply theme to the page
-   */
-  applyTheme(theme) {
-    this.html.setAttribute('data-theme', theme);
-    this.body.style.colorScheme = theme;
-  }
-  
-  /**
-   * Update theme toggle icon
-   */
-  updateThemeToggleIcon() {
-    if (this.themeToggle) {
-      const icon = this.themeToggle.querySelector('.theme-toggle__icon');
-      if (icon) {
-        icon.textContent = this.currentTheme === 'light' ? '🌙' : '☀️';
-      }
-      
-      this.themeToggle.setAttribute('aria-label', 
-        `Switch to ${this.currentTheme === 'light' ? 'dark' : 'light'} mode`
-      );
-    }
-  }
-  
-  /**
-   * Setup scroll-triggered animations
-   */
-  setupAnimations() {
-    // Don't animate if user prefers reduced motion
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
+    // Logo home navigation
+    if (this.logo) {
+      this.logo.addEventListener('click', () => this.showSection('home'));
     }
     
-    // Intersection Observer for fade-in animations
-    this.animationObserver = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          this.animationObserver.unobserve(entry.target);
+    // Back buttons
+    this.backBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.showSection('home'));
+    });
+    
+    // Card interactions
+    this.cards.forEach((card, index) => {
+      // Handle general card clicks
+      card.addEventListener('click', (e) => {
+        // Check if the click was on a challenge timer button
+        if (e.target.classList.contains('challenge-timer') || e.target.closest('.challenge-timer')) {
+          e.stopPropagation();
+          console.log('Challenge timer button clicked directly');
+          const duration = 60;
+          this.startChallengeTimer(duration, 'Daily Challenge');
+        } else {
+          this.handleCardClick(card, index);
         }
       });
-    }, {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
+      
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          this.handleCardClick(card, index);
+        }
+      });
     });
     
-    // Observe elements for animation
-    const animatedElements = document.querySelectorAll('.feature-card, .hero__title, .hero__subtitle');
-    animatedElements.forEach((el, index) => {
-      el.classList.add('fade-in');
-      
-      // Add stagger delay
-      el.style.transitionDelay = `${index * 100}ms`;
-      
-      this.animationObserver.observe(el);
+    // Challenge timer buttons specifically
+    document.querySelectorAll('.challenge-timer').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('Challenge timer button clicked via direct listener');
+        const duration = 60;
+        this.startChallengeTimer(duration, 'Daily Challenge');
+      });
     });
+    
+    // Modal interactions
+    this.modals.forEach((modal, index) => {
+      const closeBtn = modal.querySelector('.modal__close, .timer-modal__close, .challenge-timer-modal__close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', () => this.closeModal(modal, index));
+      }
+      
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          this.closeModal(modal, index);
+        }
+      });
+    });
+    
+    // Timer close buttons specifically
+    if (this.timerCloseBtn) {
+      this.timerCloseBtn.addEventListener('click', () => this.closeTimerModal());
+    }
+    
+    if (this.challengeTimerCloseBtn) {
+      this.challengeTimerCloseBtn.addEventListener('click', () => this.closeChallengeTimerModal());
+    }
+    
+    // Timer controls
+    this.initTimerControls();
+    this.initChallengeTimerControls();
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', this.handleKeyNavigation.bind(this));
   }
   
   /**
-   * Handle feature card clicks
+   * Handle navigation clicks
    */
-  handleCardClick(event, index) {
-    const card = event.currentTarget;
+  handleNavigation(e) {
+    e.preventDefault();
+    
+    // Find the button element (either e.target or its parent)
+    let targetButton = e.target;
+    if (targetButton.tagName === 'SPAN') {
+      targetButton = targetButton.parentElement;
+    }
+    
+    const target = targetButton.getAttribute('data-nav');
+    if (target) {
+      console.log(`Navigating to: ${target}`);
+      this.showSection(target);
+      this.updateActiveNavigation(targetButton);
+    }
+  }
+  
+  /**
+   * Show specific section
+   */
+  showSection(sectionName) {
+    console.log(`Showing section: ${sectionName}`);
+    console.log('Available sections:', this.sections);
+    
+    // Hide all sections
+    Object.values(this.sections).forEach(section => {
+      if (section) {
+        section.classList.remove('active');
+        section.style.display = 'none';
+      }
+    });
+    
+    // Show target section
+    const targetSection = this.sections[sectionName];
+    console.log(`Target section for ${sectionName}:`, targetSection);
+    
+    if (targetSection) {
+      targetSection.style.display = 'block';
+      targetSection.classList.add('active');
+      
+      // Add animation class
+      setTimeout(() => {
+        targetSection.classList.add('fade-in');
+      }, 10);
+      
+      this.activeSection = sectionName;
+      
+      // Update navigation active state
+      this.updateNavigationForSection(sectionName);
+      
+      this.announceToScreenReader(`Navigated to ${sectionName} section`);
+      this.trackUserInteraction('navigation', sectionName);
+    } else {
+      console.error(`Section '${sectionName}' not found!`);
+    }
+  }
+  
+  /**
+   * Update active navigation state
+   */
+  updateActiveNavigation(activeLink) {
+    this.navLinks.forEach(link => {
+      link.removeAttribute('aria-current');
+      link.classList.remove('active');
+    });
+    
+    activeLink.setAttribute('aria-current', 'page');
+    activeLink.classList.add('active');
+  }
+  
+  /**
+   * Update navigation state for a specific section
+   */
+  updateNavigationForSection(sectionName) {
+    // Remove active state from all nav links
+    this.navLinks.forEach(link => {
+      link.removeAttribute('aria-current');
+      link.classList.remove('active');
+    });
+    
+    // Find and activate the correct nav link
+    const targetNavLink = document.querySelector(`[data-nav="${sectionName}"]`);
+    if (targetNavLink) {
+      targetNavLink.setAttribute('aria-current', 'page');
+      targetNavLink.classList.add('active');
+      console.log(`Updated navigation active state for: ${sectionName}`);
+    } else {
+      console.warn(`Navigation link for '${sectionName}' not found`);
+    }
+  }
+  
+  /**
+   * Handle card clicks
+   */
+  handleCardClick(card, index) {
     const cardType = this.getCardType(card);
     
-    // Visual feedback
-    this.addClickFeedback(card);
+    console.log(`🃏 ${cardType} card clicked (index: ${index})`);
     
-    // Navigate based on card type
-    this.navigateToFeature(cardType);
+    // Add visual feedback
+    card.classList.add('clicked');
+    setTimeout(() => card.classList.remove('clicked'), 200);
     
-    // Analytics (placeholder)
-    this.trackUserInteraction('card_click', cardType);
-  }
-  
-  /**
-   * Handle keyboard navigation for cards
-   */
-  handleCardKeydown(event, index) {
-    const { key } = event;
-    
-    if (key === 'Enter' || key === ' ') {
-      event.preventDefault();
-      this.handleCardClick(event, index);
-    } else if (key === 'ArrowRight' || key === 'ArrowDown') {
-      event.preventDefault();
-      this.focusNextCard(index);
-    } else if (key === 'ArrowLeft' || key === 'ArrowUp') {
-      event.preventDefault();
-      this.focusPreviousCard(index);
+    // Handle different card types
+    if (cardType === 'feature') {
+      this.handleFeatureCard(card, index);
+    } else if (cardType === 'workout' || cardType === 'stretch') {
+      this.handleWorkoutStretchCard(card, index);
+    } else if (cardType === 'tips') {
+      this.handleTipsCard(card, index);
     }
+    
+    this.trackUserInteraction('card_click', `${cardType}_${index}`);
   }
   
   /**
    * Get card type from classes
    */
   getCardType(card) {
-    if (card.classList.contains('feature-card--workout')) return 'workout';
-    if (card.classList.contains('feature-card--stretch')) return 'stretch';
-    if (card.classList.contains('feature-card--movement')) return 'movement';
-    if (card.classList.contains('feature-card--chat')) return 'chat';
+    if (card.classList.contains('feature-card')) return 'feature';
+    if (card.classList.contains('workout-card')) return 'workout';
+    if (card.classList.contains('stretch-card')) return 'stretch';
+    if (card.classList.contains('tips-card')) return 'tips';
     return 'unknown';
   }
   
   /**
-   * Add visual feedback for card interactions
+   * Handle feature card interaction
    */
-  addClickFeedback(card) {
-    card.style.transform = 'translateY(-2px) scale(0.98)';
+  handleFeatureCard(card, index) {
+    const sections = ['workouts', 'stretches', 'tips', 'chat'];
+    const targetSection = sections[index];
     
-    setTimeout(() => {
-      card.style.transform = '';
-    }, 150);
+    if (targetSection === 'chat') {
+      this.openChatWidget();
+    } else if (targetSection) {
+      this.showSection(targetSection);
+    }
   }
   
   /**
-   * Navigate to specific feature
+   * Handle workout/stretch card interaction
    */
-  navigateToFeature(type) {
-    console.log(`🎯 Navigating to: ${type}`);
+  handleWorkoutStretchCard(card, index) {
+    const startButton = card.querySelector('.workout-card__start, .challenge-timer');
+    if (startButton) {
+      const duration = this.getTimerDuration(card);
+      this.startTimer(duration, card.querySelector('h3').textContent);
+    }
+  }
+  
+  /**
+   * Handle tips card interaction
+   */
+  handleTipsCard(card, index) {
+    // Check if this card has a challenge timer button
+    const challengeButton = card.querySelector('.challenge-timer');
+    if (challengeButton) {
+      console.log('Challenge timer button clicked');
+      const duration = 60; // 1 minute for challenges
+      this.startChallengeTimer(duration, 'Daily Challenge');
+    } else {
+      // Add visual feedback for tips cards without timers
+      this.showTipDetails(card, index);
+    }
+  }
+  
+  /**
+   * Show tip details
+   */
+  showTipDetails(card, index) {
+    const title = card.querySelector('h3').textContent;
+    const description = card.querySelector('p').textContent;
     
-    // Show loading state
-    this.showLoading();
+    this.announceToScreenReader(`Tip: ${title}. ${description}`);
+  }
+  
+  /**
+   * Get timer duration from card
+   */
+  getTimerDuration(card) {
+    const durationText = card.querySelector('.workout-card__info, .stretch-card__info');
+    if (durationText) {
+      const match = durationText.textContent.match(/(\d+)\s*min/i);
+      return match ? parseInt(match[1]) * 60 : 300; // Default 5 minutes
+    }
+    return 300;
+  }
+  
+  /**
+   * Initialize timer controls
+   */
+  initTimerControls() {
+    const startBtns = document.querySelectorAll('.timer-btn--start');
+    const pauseBtns = document.querySelectorAll('.timer-btn--pause');
+    const resetBtns = document.querySelectorAll('.timer-btn--reset');
     
-    // Simulate navigation delay
-    setTimeout(() => {
-      this.hideLoading();
+    startBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleTimerControl('start'));
+    });
+    
+    pauseBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleTimerControl('pause'));
+    });
+    
+    resetBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleTimerControl('reset'));
+    });
+  }
+  
+  /**
+   * Start timer
+   */
+  startTimer(duration, title = 'Workout') {
+    console.log(`⏱️ Starting timer: ${duration}s for "${title}"`);
+    
+    const timerId = Date.now();
+    const timer = {
+      id: timerId,
+      duration: duration,
+      remaining: duration,
+      title: title,
+      isRunning: false,
+      interval: null
+    };
+    
+    this.timers.set(timerId, timer);
+    this.showTimerModal(timer);
+    this.trackUserInteraction('timer_started', title);
+  }
+  
+  /**
+   * Show timer modal
+   */
+  showTimerModal(timer) {
+    if (this.timerModal) {
+      this.timerModal.classList.add('active');
+      this.updateTimerDisplay(timer);
       
-      switch (type) {
-        case 'workout':
-          this.showComingSoon('Quick Workouts');
-          break;
-        case 'stretch':
-          this.showComingSoon('Stretch Routines');
-          break;
-        case 'movement':
-          this.showComingSoon('Daily Movement Tips');
-          break;
-        case 'chat':
-          this.openChatWidget();
-          break;
-        default:
-          console.warn('Unknown feature type:', type);
+      // Focus management
+      const firstButton = this.timerModal.querySelector('.timer-btn--start');
+      if (firstButton) {
+        setTimeout(() => firstButton.focus(), 100);
       }
-    }, 800);
-  }
-  
-  /**
-   * Show coming soon modal (placeholder)
-   */
-  showComingSoon(featureName) {
-    alert(`🚧 ${featureName} coming soon! \n\nWe're working hard to bring you the best movement experience.`);
-  }
-  
-  /**
-   * Open chat widget (placeholder for Botpress integration)
-   */
-  openChatWidget() {
-    // This would integrate with Botpress or another chat service
-    console.log('💬 Opening chat widget...');
-    
-    // Placeholder implementation
-    if (window.botpressWebChat) {
-      window.botpressWebChat.sendEvent({ type: 'show' });
-    } else {
-      this.showComingSoon('Chat with Coach');
+      
+      this.announceToScreenReader(`Timer started for ${timer.title}`);
     }
   }
   
   /**
-   * Focus management for keyboard navigation
+   * Update timer display
    */
-  focusNextCard(currentIndex) {
-    const nextIndex = (currentIndex + 1) % this.featureCards.length;
-    this.featureCards[nextIndex].focus();
-  }
-  
-  focusPreviousCard(currentIndex) {
-    const prevIndex = currentIndex === 0 ? this.featureCards.length - 1 : currentIndex - 1;
-    this.featureCards[prevIndex].focus();
-  }
-  
-  /**
-   * Handle global keyboard shortcuts
-   */
-  handleGlobalKeydown(event) {
-    const { key, ctrlKey, metaKey } = event;
-    
-    // Theme toggle shortcut (Ctrl/Cmd + Shift + T)
-    if ((ctrlKey || metaKey) && event.shiftKey && key === 'T') {
-      event.preventDefault();
-      this.toggleTheme();
+  updateTimerDisplay(timer) {
+    const display = document.querySelector('.timer-time');
+    if (display) {
+      const minutes = Math.floor(timer.remaining / 60);
+      const seconds = timer.remaining % 60;
+      display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
     }
   }
   
   /**
-   * Handle card hover effects
+   * Handle timer controls
    */
-  handleCardHover(card, isHovering) {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      return;
-    }
+  handleTimerControl(action) {
+    const activeTimer = Array.from(this.timers.values()).find(t => t.isRunning || this.timerModal?.classList.contains('active'));
     
-    if (isHovering) {
-      card.style.transform = 'translateY(-4px)';
-    } else {
-      card.style.transform = '';
-    }
-  }
-  
-  /**
-   * Setup accessibility features
-   */
-  setupAccessibility() {
-    // Add live region for announcements
-    this.createLiveRegion();
+    if (!activeTimer) return;
     
-    // Enhanced focus indicators
-    this.setupFocusManagement();
-    
-    // Skip link functionality is handled in CSS
-  }
-  
-  /**
-   * Create ARIA live region for screen reader announcements
-   */
-  createLiveRegion() {
-    const liveRegion = document.createElement('div');
-    liveRegion.setAttribute('aria-live', 'polite');
-    liveRegion.setAttribute('aria-atomic', 'true');
-    liveRegion.className = 'sr-only';
-    liveRegion.id = 'live-region';
-    document.body.appendChild(liveRegion);
-    this.liveRegion = liveRegion;
-  }
-  
-  /**
-   * Announce message to screen readers
-   */
-  announceToScreenReader(message) {
-    if (this.liveRegion) {
-      this.liveRegion.textContent = message;
+    switch (action) {
+      case 'start':
+        this.resumeTimer(activeTimer);
+        break;
+      case 'pause':
+        this.pauseTimer(activeTimer);
+        break;
+      case 'reset':
+        this.resetTimer(activeTimer);
+        break;
+      case 'stop':
+        this.stopTimer(activeTimer);
+        break;
     }
   }
   
   /**
-   * Enhanced focus management
+   * Resume timer
    */
-  setupFocusManagement() {
-    // Focus trap for modals (when implemented)
-    // Skip to main content functionality
-    const skipLink = document.querySelector('.skip-link');
-    if (skipLink) {
-      skipLink.addEventListener('click', (e) => {
-        const targetId = skipLink.getAttribute('href').substring(1);
-        const target = document.getElementById(targetId);
-        if (target) {
-          target.focus();
-          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  resumeTimer(timer) {
+    if (timer.isRunning) return;
+    
+    timer.isRunning = true;
+    timer.interval = setInterval(() => {
+      timer.remaining--;
+      this.updateTimerDisplay(timer);
+      
+      if (timer.remaining <= 0) {
+        this.completeTimer(timer);
+      }
+    }, 1000);
+    
+    this.trackUserInteraction('timer_resumed', timer.title);
+  }
+  
+  /**
+   * Pause timer
+   */
+  pauseTimer(timer) {
+    if (!timer.isRunning) return;
+    
+    timer.isRunning = false;
+    if (timer.interval) {
+      clearInterval(timer.interval);
+      timer.interval = null;
+    }
+    
+    this.trackUserInteraction('timer_paused', timer.title);
+  }
+  
+  /**
+   * Reset timer
+   */
+  resetTimer(timer) {
+    this.pauseTimer(timer);
+    timer.remaining = timer.duration;
+    this.updateTimerDisplay(timer);
+    
+    this.trackUserInteraction('timer_reset', timer.title);
+  }
+  
+  /**
+   * Complete timer
+   */
+  completeTimer(timer) {
+    this.pauseTimer(timer);
+    
+    // Show completion message
+    this.announceToScreenReader(`Timer completed for ${timer.title}. Great job!`);
+    
+    // Optional: Play sound or show notification
+    this.showTimerCompletion(timer);
+    
+    this.trackUserInteraction('timer_completed', timer.title);
+  }
+
+  /**
+   * Stop timer (end session early)
+   */
+  stopTimer(timer) {
+    this.pauseTimer(timer);
+    
+    // Close timer modal
+    if (this.timerModal) {
+      this.timerModal.classList.remove('active');
+    }
+    
+    // Remove timer from map
+    this.timers.delete(timer.id);
+    
+    this.announceToScreenReader(`Timer stopped for ${timer.title}`);
+    this.trackUserInteraction('timer_stopped', timer.title);
+  }
+  
+  /**
+   * Start challenge timer
+   */
+  startChallengeTimer(duration, title = 'Challenge') {
+    console.log(`⏱️ Starting challenge timer: ${duration}s for "${title}"`);
+    
+    const timerId = Date.now();
+    const timer = {
+      id: timerId,
+      duration: duration,
+      remaining: duration,
+      title: title,
+      isRunning: false,
+      interval: null,
+      isChallenge: true
+    };
+    
+    this.timers.set(timerId, timer);
+    this.showChallengeTimerModal(timer);
+    this.trackUserInteraction('challenge_timer_started', title);
+  }
+  
+  /**
+   * Show challenge timer modal
+   */
+  showChallengeTimerModal(timer) {
+    if (this.challengeTimerModal) {
+      this.challengeTimerModal.classList.add('active');
+      this.challengeTimerModal.setAttribute('aria-hidden', 'false');
+      this.updateChallengeTimerDisplay(timer);
+      
+      // Focus management
+      const firstButton = this.challengeTimerModal.querySelector('.challenge-timer-btn--start');
+      if (firstButton) {
+        setTimeout(() => firstButton.focus(), 100);
+      }
+      
+      this.announceToScreenReader(`Challenge timer started for ${timer.title}`);
+    }
+  }
+  
+  /**
+   * Update challenge timer display
+   */
+  updateChallengeTimerDisplay(timer) {
+    const display = document.querySelector('.challenge-timer-time');
+    if (display) {
+      const minutes = Math.floor(timer.remaining / 60);
+      const seconds = timer.remaining % 60;
+      display.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+  }
+  
+  /**
+   * Initialize challenge timer controls
+   */
+  initChallengeTimerControls() {
+    const startBtns = document.querySelectorAll('.challenge-timer-btn--start');
+    const pauseBtns = document.querySelectorAll('.challenge-timer-btn--pause');
+    const resetBtns = document.querySelectorAll('.challenge-timer-btn--reset');
+    
+    startBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleChallengeTimerControl('start'));
+    });
+    
+    pauseBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleChallengeTimerControl('pause'));
+    });
+    
+    resetBtns.forEach(btn => {
+      btn.addEventListener('click', () => this.handleChallengeTimerControl('reset'));
+    });
+  }
+  
+  /**
+   * Handle challenge timer controls
+   */
+  handleChallengeTimerControl(action) {
+    const activeTimer = Array.from(this.timers.values()).find(t => t.isChallenge && (t.isRunning || this.challengeTimerModal?.classList.contains('active')));
+    
+    if (!activeTimer) return;
+    
+    switch (action) {
+      case 'start':
+        this.resumeChallengeTimer(activeTimer);
+        break;
+      case 'pause':
+        this.pauseChallengeTimer(activeTimer);
+        break;
+      case 'reset':
+        this.resetChallengeTimer(activeTimer);
+        break;
+    }
+  }
+  
+  /**
+   * Resume challenge timer
+   */
+  resumeChallengeTimer(timer) {
+    if (timer.isRunning) return;
+    
+    timer.isRunning = true;
+    timer.interval = setInterval(() => {
+      timer.remaining--;
+      this.updateChallengeTimerDisplay(timer);
+      
+      if (timer.remaining <= 0) {
+        this.completeChallengeTimer(timer);
+      }
+    }, 1000);
+    
+    this.trackUserInteraction('challenge_timer_resumed', timer.title);
+  }
+  
+  /**
+   * Pause challenge timer
+   */
+  pauseChallengeTimer(timer) {
+    if (!timer.isRunning) return;
+    
+    timer.isRunning = false;
+    if (timer.interval) {
+      clearInterval(timer.interval);
+      timer.interval = null;
+    }
+    
+    this.trackUserInteraction('challenge_timer_paused', timer.title);
+  }
+  
+  /**
+   * Reset challenge timer
+   */
+  resetChallengeTimer(timer) {
+    this.pauseChallengeTimer(timer);
+    timer.remaining = timer.duration;
+    this.updateChallengeTimerDisplay(timer);
+    
+    this.trackUserInteraction('challenge_timer_reset', timer.title);
+  }
+  
+  /**
+   * Complete challenge timer
+   */
+  completeChallengeTimer(timer) {
+    this.pauseChallengeTimer(timer);
+    
+    // Show completion message
+    this.announceToScreenReader(`Challenge completed for ${timer.title}. Awesome job!`);
+    
+    const display = document.querySelector('.challenge-timer-time');
+    if (display) {
+      display.textContent = '🎉 DONE!';
+      display.style.color = 'var(--color-success)';
+      
+      setTimeout(() => {
+        display.style.color = 'var(--color-primary)';
+      }, 3000);
+    }
+    
+    alert(`🎉 Amazing! You completed your ${timer.title}! Keep up the great work!`);
+    this.trackUserInteraction('challenge_timer_completed', timer.title);
+  }
+  
+  /**
+   * Close timer modal
+   */
+  closeTimerModal() {
+    if (this.timerModal) {
+      this.timerModal.classList.remove('active');
+      this.timerModal.setAttribute('aria-hidden', 'true');
+      
+      // Stop any running workout timers
+      this.timers.forEach(timer => {
+        if (!timer.isChallenge) {
+          this.pauseTimer(timer);
         }
       });
     }
   }
   
   /**
-   * Handle reduced motion preferences
+   * Close challenge timer modal
    */
-  handleReducedMotion() {
-    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  closeChallengeTimerModal() {
+    if (this.challengeTimerModal) {
+      this.challengeTimerModal.classList.remove('active');
+      this.challengeTimerModal.setAttribute('aria-hidden', 'true');
+      
+      // Stop any running challenge timers
+      this.timers.forEach(timer => {
+        if (timer.isChallenge) {
+          this.pauseChallengeTimer(timer);
+        }
+      });
+    }
+  }
+  
+  /**
+   * Show timer completion
+   */
+  showTimerCompletion(timer) {
+    const completionMessage = `🎉 Great job! You completed your ${timer.title}!`;
     
-    if (mediaQuery.matches) {
-      document.documentElement.style.setProperty('--transition-fast', '0ms');
-      document.documentElement.style.setProperty('--transition-normal', '0ms');
-      document.documentElement.style.setProperty('--transition-slow', '0ms');
+    // Update timer display
+    const display = document.querySelector('.timer-time');
+    if (display) {
+      display.textContent = '🎉 DONE!';
+      display.style.color = 'var(--color-success)';
+      
+      setTimeout(() => {
+        display.style.color = 'var(--color-primary)';
+      }, 3000);
     }
     
-    mediaQuery.addEventListener('change', (e) => {
-      if (e.matches) {
-        document.documentElement.style.setProperty('--transition-fast', '0ms');
-        document.documentElement.style.setProperty('--transition-normal', '0ms');
-        document.documentElement.style.setProperty('--transition-slow', '0ms');
+    // Could add confetti or other celebration effects here
+    console.log(completionMessage);
+    alert(completionMessage);
+  }
+  
+  /**
+   * Close modal
+   */
+  closeModal(modal, index) {
+    modal.classList.remove('active');
+    
+    // Stop any running timers if timer modal is closed
+    if (modal === this.timerModal) {
+      this.timers.forEach(timer => this.pauseTimer(timer));
+    }
+    
+    this.announceToScreenReader('Modal closed');
+  }
+  
+  /**
+   * Open chat widget (Botpress integration)
+   */
+  openChatWidget() {
+    console.log('💬 Opening chat widget...');
+    
+    // Check if Botpress webchat is loaded
+    if (typeof window.botpress !== 'undefined' && window.botpress.open) {
+      try {
+        // Open the Botpress webchat
+        window.botpress.open();
+        this.trackUserInteraction('chat_opened', 'botpress_widget');
+        this.announceToScreenReader('Chat widget opened');
+        
+      } catch (error) {
+        console.warn('Error opening Botpress widget:', error);
+        this.showChatFallback();
+      }
+    } else {
+      // Try alternative methods
+      if (typeof window.botpressWebChat !== 'undefined') {
+        try {
+          window.botpressWebChat.sendEvent({ type: 'show' });
+          this.trackUserInteraction('chat_opened', 'botpress_widget_alt');
+        } catch (error) {
+          console.warn('Error with alternative method:', error);
+          this.showChatFallback();
+        }
       } else {
-        document.documentElement.style.removeProperty('--transition-fast');
-        document.documentElement.style.removeProperty('--transition-normal');
-        document.documentElement.style.removeProperty('--transition-slow');
+        console.warn('Botpress not found');
+        this.showChatFallback();
       }
+    }
+  }
+  
+  /**
+   * Fallback chat option when Botpress isn't available
+   */
+  showChatFallback() {
+    const fallbackMessage = `🤖 Chat with MoveSmart AI\n\n` +
+      `Hey! I'm your fitness coach. I can help with:\n\n` +
+      `💪 Quick workouts (5-15 min)\n` +
+      `🧘 Stretch routines\n` +
+      `🚶 Daily movement tips\n` +
+      `❓ Exercise questions\n\n` +
+      `The chat widget should appear automatically. If you don't see it, please refresh the page!`;
+    
+    alert(fallbackMessage);
+  }
+  
+  /**
+   * Handle keyboard navigation
+   */
+  handleKeyNavigation(e) {
+    // ESC to close modals
+    if (e.key === 'Escape') {
+      this.modals.forEach(modal => {
+        if (modal.classList.contains('active')) {
+          this.closeModal(modal, 0);
+        }
+      });
+    }
+    
+    // Number keys for quick navigation
+    if (e.key >= '1' && e.key <= '4' && !e.target.matches('input, textarea')) {
+      const sections = ['home', 'workouts', 'stretches', 'tips'];
+      const sectionIndex = parseInt(e.key) - 1;
+      if (sections[sectionIndex]) {
+        this.showSection(sections[sectionIndex]);
+      }
+    }
+  }
+  
+  /**
+   * Initialize intersection observer for animations
+   */
+  initIntersectionObserver() {
+    if ('IntersectionObserver' in window) {
+      this.observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('fade-in');
+          }
+        });
+      }, {
+        threshold: 0.1,
+        rootMargin: '20px'
+      });
+      
+      // Observe cards and sections
+      this.cards.forEach(card => this.observer.observe(card));
+    }
+  }
+  
+  /**
+   * Initialize accessibility features
+   */
+  initAccessibilityFeatures() {
+    // Add ARIA labels dynamically
+    this.cards.forEach((card, index) => {
+      if (!card.getAttribute('aria-label')) {
+        const title = card.querySelector('h3, .feature-card__title');
+        if (title) {
+          card.setAttribute('aria-label', `${title.textContent} - Click to interact`);
+        }
+      }
+      
+      // Make cards focusable
+      if (!card.hasAttribute('tabindex')) {
+        card.setAttribute('tabindex', '0');
+      }
+    });
+    
+    // Enhanced focus management for modals
+    this.modals.forEach(modal => {
+      modal.addEventListener('keydown', (e) => {
+        if (e.key === 'Tab') {
+          this.trapFocus(e, modal);
+        }
+      });
     });
   }
   
   /**
-   * Show loading indicator
+   * Trap focus within modal
    */
-  showLoading() {
-    if (this.loadingElement) {
-      this.isLoading = true;
-      this.loadingElement.classList.add('active');
-      this.loadingElement.setAttribute('aria-hidden', 'false');
-      
-      // Prevent scrolling
-      this.body.style.overflow = 'hidden';
-    }
-  }
-  
-  /**
-   * Hide loading indicator
-   */
-  hideLoading() {
-    if (this.loadingElement) {
-      this.isLoading = false;
-      this.loadingElement.classList.remove('active');
-      this.loadingElement.setAttribute('aria-hidden', 'true');
-      
-      // Restore scrolling
-      this.body.style.overflow = '';
-    }
-  }
-  
-  /**
-   * Preload critical images
-   */
-  preloadImages() {
-    // Add image preloading if needed
-    const imagesToPreload = [
-      // Add image paths here when images are added
-    ];
+  trapFocus(e, modal) {
+    const focusableElements = modal.querySelectorAll(
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    );
     
-    imagesToPreload.forEach(src => {
-      const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'image';
-      link.href = src;
-      document.head.appendChild(link);
-    });
-  }
-  
-  /**
-   * Track page load time
-   */
-  trackLoadTime() {
-    if ('performance' in window) {
-      const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-      console.log(`📊 Page load time: ${loadTime}ms`);
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+    
+    if (e.shiftKey && document.activeElement === firstElement) {
+      e.preventDefault();
+      lastElement.focus();
+    } else if (!e.shiftKey && document.activeElement === lastElement) {
+      e.preventDefault();
+      firstElement.focus();
     }
   }
   
   /**
-   * Track user interactions (placeholder for analytics)
+   * Announce to screen reader
    */
-  trackUserInteraction(action, data) {
-    console.log(`📈 User interaction:`, { action, data, timestamp: new Date().toISOString() });
+  announceToScreenReader(message) {
+    let announcement = document.getElementById('sr-announcement');
+    if (!announcement) {
+      announcement = document.createElement('div');
+      announcement.id = 'sr-announcement';
+      announcement.className = 'sr-only';
+      announcement.setAttribute('aria-live', 'polite');
+      document.body.appendChild(announcement);
+    }
     
-    // Here you would send to your analytics service
-    // Example: gtag('event', action, { custom_parameter: data });
+    announcement.textContent = message;
+    
+    // Clear after announcement
+    setTimeout(() => {
+      announcement.textContent = '';
+    }, 1000);
   }
   
   /**
-   * Utility: Debounce function
+   * Track user interactions for analytics
    */
-  debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-      const later = () => {
-        clearTimeout(timeout);
-        func(...args);
-      };
-      clearTimeout(timeout);
-      timeout = setTimeout(later, wait);
-    };
-  }
-  
-  /**
-   * Utility: Throttle function
-   */
-  throttle(func, limit) {
-    let inThrottle;
-    return function executedFunction(...args) {
-      if (!inThrottle) {
-        func.apply(this, args);
-        inThrottle = true;
-        setTimeout(() => inThrottle = false, limit);
+  trackUserInteraction(action, details = '') {
+    const data = {
+      action,
+      details,
+      timestamp: new Date().toISOString(),
+      section: this.activeSection,
+      userAgent: navigator.userAgent,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
       }
     };
+    
+    console.log('📊 User interaction:', data);
+    
+    // Here you could send to analytics service
+    // Example: gtag('event', action, { custom_parameter: details });
+  }
+  
+  /**
+   * Handle errors gracefully
+   */
+  handleError(context, error) {
+    console.error(`❌ Error in ${context}:`, error);
+    
+    // Show user-friendly error message
+    this.announceToScreenReader('An error occurred. Please try refreshing the page.');
+    
+    // Track error for debugging
+    this.trackUserInteraction('error', `${context}: ${error.message}`);
   }
 }
 
 // Initialize the application
-const app = new MoveSmartAI();
-
-// Service Worker registration (for future PWA features)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Uncomment when service worker is created
-    // navigator.serviceWorker.register('/sw.js')
-    //   .then(registration => console.log('SW registered: ', registration))
-    //   .catch(registrationError => console.log('SW registration failed: ', registrationError));
-  });
-}
-
-// Export for testing
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = MoveSmartAI;
-}
+new MoveSmartAI();

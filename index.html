@@ -20,6 +20,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    
     <!-- Google Fonts - Inter (readable, modern) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
@@ -29,23 +33,33 @@
     <title>MoveSmartAI - Quick Workouts for Busy Youths</title>
 </head>
 <body>
-    <!-- Skip Navigation Link (Accessibility) -->
-    <a href="#main" class="skip-link">Skip to main content</a>
-    
     <!-- Header -->
     <header class="header" role="banner">
         <div class="container">
             <div class="header__content">
-                <div class="logo">
+                <div class="logo" role="button" tabindex="0" data-nav="home">
                     <h1 class="logo__text">
                         <span class="logo__move">Move</span><span class="logo__smart">Smart</span><span class="logo__ai">AI</span>
                     </h1>
                 </div>
                 
-                <!-- Theme Toggle -->
-                <button class="theme-toggle" aria-label="Toggle dark mode" type="button">
-                    <span class="theme-toggle__icon">🌙</span>
-                </button>
+                <!-- Navigation -->
+                <nav class="nav" role="navigation" aria-label="Main navigation">
+                    <ul class="nav__list">
+                        <li class="nav__item">
+                            <button class="nav__link" data-nav="home" aria-current="page"><span>Home</span></button>
+                        </li>
+                        <li class="nav__item">
+                            <button class="nav__link" data-nav="workouts"><span>Workouts</span></button>
+                        </li>
+                        <li class="nav__item">
+                            <button class="nav__link" data-nav="stretches"><span>Stretches</span></button>
+                        </li>
+                        <li class="nav__item">
+                            <button class="nav__link" data-nav="tips"><span>Tips</span></button>
+                        </li>
+                    </ul>
+                </nav>
             </div>
         </div>
     </header>
@@ -55,6 +69,9 @@
         <div class="container">
             <!-- Hero Section -->
             <section class="hero" aria-labelledby="hero-title">
+                <div class="hero__image">
+                    <div class="hero__image-placeholder">🏃‍♂️💪🎆</div>
+                </div>
                 <div class="hero__content">
                     <h2 id="hero-title" class="hero__title">
                         Get moving in <span class="highlight">5 minutes</span>
@@ -63,16 +80,101 @@
                         Quick workouts, stretch breaks, and movement tips designed for busy students. 
                         No gym required, no cringe—just results.
                     </p>
+                    
+                    <!-- Hero Features -->
+                    <div class="hero__features">
+                        <div class="hero__feature">
+                            <span class="hero__feature-icon">⚡</span>
+                            <span>5-15 min sessions</span>
+                        </div>
+                        <div class="hero__feature">
+                            <span class="hero__feature-icon">🎯</span>
+                            <span>AI-powered coaching</span>
+                        </div>
+                        <div class="hero__feature">
+                            <span class="hero__feature-icon">📱</span>
+                            <span>Works anywhere</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Promotional Section -->
+            <section class="promo-section" aria-labelledby="promo-title">
+                <div class="promo-header">
+                    <h2 id="promo-title" class="promo-header__title">See MoveSmartAI in Action</h2>
+                    <p class="promo-header__subtitle">Watch our quick demo and check out what makes us special!</p>
+                </div>
+                
+                <div class="promo-content">
+                    <!-- Promo Video -->
+                    <div class="promo-video">
+                        <div class="video-container">
+                            <video controls autoplay muted loop poster="images/video-thumbnail.jpg" class="promo-video-player">
+                                <source src="MoveSmartAI_%20Quick%20Moves.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                        <div class="video-info">
+                            <h3 class="video-title">🎬 MoveSmartAI Demo</h3>
+                            <p class="video-description">Watch a quick preview of our workouts, stretches, and daily movement tips!</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Promo Poster -->
+                    <div class="promo-poster">
+                        <div class="poster-container">
+                            <h3 class="poster-title">Our Official Promotional Poster</h3>
+                            <div class="poster-image-container">
+                                <img src="Gemini_Generated_Image_ke9zwdke9zwdke9z.png" 
+                                     alt="MoveSmartAI Promotional Poster - Quick workouts, Stretch breaks, Daily movement tips" 
+                                     class="poster-image">
+                                <div class="poster-overlay">
+                                    <div class="poster-overlay-content">
+                                        <h4>🌟 Featured Benefits</h4>
+                                        <ul class="poster-benefits">
+                                            <li>✨ 5-15 minute sessions</li>
+                                            <li>🧘‍♀️ Full body stretches</li>
+                                            <li>🏠 Works anywhere</li>
+                                            <li>📱 Mobile friendly</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Safety Notice -->
+            <section class="safety-notice" aria-labelledby="safety-title">
+                <div class="safety-notice__content">
+                    <span class="safety-notice__icon" role="img" aria-label="Warning">⚠️</span>
+                    <div class="safety-notice__text">
+                        <strong>Safety First:</strong> I'm not a doctor. Stop if you experience pain, dizziness, or discomfort.
+                    </div>
                 </div>
             </section>
 
             <!-- Feature Cards -->
-            <section class="features" aria-labelledby="features-title">
-                <h2 id="features-title" class="sr-only">Main Features</h2>
+            <section class="features-section" aria-labelledby="features-title">
+                <!-- Features Header -->
+                <div class="features-header">
+                    <h2 id="features-title" class="features-header__title">Choose Your Movement</h2>
+                    <p class="features-header__subtitle">Pick what fits your mood and schedule</p>
+                    <p class="features-header__scroll-hint">
+                        <span>👈</span>
+                        <span>Scroll horizontally to explore all options</span>
+                        <span>👉</span>
+                    </p>
+                </div>
                 
-                <div class="features__grid">
+                <div class="features">
                     <!-- Quick Workout Card -->
                     <article class="feature-card feature-card--workout" tabindex="0" role="button" aria-describedby="workout-desc">
+                        <div class="feature-card__image">
+                            <div class="feature-image">🏋️‍♀️</div>
+                        </div>
                         <div class="feature-card__icon">
                             <span role="img" aria-label="Workout icon">💪</span>
                         </div>
@@ -87,6 +189,9 @@
 
                     <!-- Stretch Routine Card -->
                     <article class="feature-card feature-card--stretch" tabindex="0" role="button" aria-describedby="stretch-desc">
+                        <div class="feature-card__image">
+                            <div class="feature-image">🧘‍♀️</div>
+                        </div>
                         <div class="feature-card__icon">
                             <span role="img" aria-label="Stretch icon">🧘</span>
                         </div>
@@ -101,6 +206,9 @@
 
                     <!-- Daily Movement Card -->
                     <article class="feature-card feature-card--movement" tabindex="0" role="button" aria-describedby="movement-desc">
+                        <div class="feature-card__image">
+                            <div class="feature-image">🚶‍♂️</div>
+                        </div>
                         <div class="feature-card__icon">
                             <span role="img" aria-label="Movement icon">🚶</span>
                         </div>
@@ -115,6 +223,9 @@
 
                     <!-- Chat with Coach Card -->
                     <article class="feature-card feature-card--chat" tabindex="0" role="button" aria-describedby="chat-desc">
+                        <div class="feature-card__image">
+                            <div class="feature-image">🤖</div>
+                        </div>
                         <div class="feature-card__icon">
                             <span role="img" aria-label="Chat icon">💬</span>
                         </div>
@@ -150,6 +261,339 @@
         </div>
     </main>
 
+    <!-- Quick Workouts Section -->
+    <section id="workouts" class="page-section" aria-labelledby="workouts-title">
+        <div class="container">
+            <div class="section-header">
+                <button class="back-btn" aria-label="Back to menu">
+                    <span class="back-btn__icon">←</span>
+                    <span class="back-btn__text">Back to Menu</span>
+                </button>
+                <h2 id="workouts-title" class="section-title">Quick Workouts</h2>
+                <p class="section-subtitle">Choose your time and get moving!</p>
+            </div>
+            
+            <!-- Workout Header -->
+            <div class="section-scroll-hint">
+                <p class="scroll-hint__text">
+                    <span>👈</span>
+                    <span>Scroll horizontally to see all workout options</span>
+                    <span>👉</span>
+                </p>
+            </div>
+            
+            <div class="workout-grid">
+                <article class="workout-card" data-duration="5">
+                    <div class="workout-card__header">
+                        <h3 class="workout-card__title">5-Min Full Body (Beginner-Friendly)</h3>
+                        <span class="workout-card__duration">5 min</span>
+                    </div>
+                    <ul class="workout-card__routine">
+                        <li><strong>Do this 2 rounds:</strong></li>
+                        <li>March in place — 30s</li>
+                        <li>Chair squat / Squat — 10 reps</li>
+                        <li>Wall push-ups — 10 reps</li>
+                        <li>Glute bridges — 10 reps</li>
+                        <li>Standing stretch + deep breaths — 30s</li>
+                    </ul>
+                    <button class="workout-card__start">
+                        <span class="button-text">Start Workout</span>
+                        <span class="button-loader" aria-hidden="true"></span>
+                    </button>
+                </article>
+                
+                <article class="workout-card" data-duration="10">
+                    <div class="workout-card__header">
+                        <h3 class="workout-card__title">10-Min Full Body</h3>
+                        <span class="workout-card__duration">10 min</span>
+                    </div>
+                    <ul class="workout-card__routine">
+                        <li><strong>40s work / 20s rest x 10 rounds:</strong></li>
+                        <li>Squats (or chair sit-to-stand)</li>
+                        <li>Incline push-ups (wall/table)</li>
+                        <li>Reverse lunges (or step-backs)</li>
+                        <li>Dead bug (core)</li>
+                        <li>Plank (knees if needed)</li>
+                    </ul>
+                    <button class="workout-card__start">
+                        <span class="button-text">Start Workout</span>
+                        <span class="button-loader" aria-hidden="true"></span>
+                    </button>
+                </article>
+                
+                <article class="workout-card" data-duration="15">
+                    <div class="workout-card__header">
+                        <h3 class="workout-card__title">15-Min Strength + Cardio (3 circuits)</h3>
+                        <span class="workout-card__duration">15 min</span>
+                    </div>
+                    <ul class="workout-card__routine">
+                        <li><strong>Circuit (repeat 3x):</strong></li>
+                        <li>12 squats</li>
+                        <li>8 incline push-ups</li>
+                        <li>12 glute bridges</li>
+                        <li>20s plank</li>
+                        <li>45s step-touch / march</li>
+                    </ul>
+                    <button class="workout-card__start">
+                        <span class="button-text">Start Workout</span>
+                        <span class="button-loader" aria-hidden="true"></span>
+                    </button>
+                </article>
+            </div>
+            
+            <!-- Timer Modal -->
+            <div class="timer-modal" id="timer-modal" aria-hidden="true">
+                <div class="timer-modal__content">
+                    <div class="timer-modal__header">
+                        <h3 class="timer-modal__title">Workout Timer</h3>
+                        <button class="timer-modal__close" aria-label="Close timer">×</button>
+                    </div>
+                    <div class="timer-display">
+                        <div class="timer-circle">
+                            <div class="timer-time">5:00</div>
+                        </div>
+                        <div class="timer-controls">
+                            <button class="timer-btn timer-btn--start">Start</button>
+                            <button class="timer-btn timer-btn--pause">Pause</button>
+                            <button class="timer-btn timer-btn--reset">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stretch Routines Section -->
+    <section id="stretches" class="page-section" aria-labelledby="stretches-title">
+        <div class="container">
+            <div class="section-header">
+                <button class="back-btn" aria-label="Back to menu">
+                    <span class="back-btn__icon">←</span>
+                    <span class="back-btn__text">Back to Menu</span>
+                </button>
+                <h2 id="stretches-title" class="section-title">Stretch Routines</h2>
+                <p class="section-subtitle">Target problem areas from sitting all day</p>
+            </div>
+            
+            <!-- Stretch Header -->
+            <div class="section-scroll-hint">
+                <p class="scroll-hint__text">
+                    <span>👈</span>
+                    <span>Scroll horizontally to explore all stretch routines</span>
+                    <span>👉</span>
+                </p>
+            </div>
+            
+            <div class="stretch-grid">
+                <article class="stretch-card">
+                    <div class="stretch-card__header">
+                        <h3 class="stretch-card__title">Neck & Shoulders</h3>
+                        <span class="stretch-card__duration">2-4 min</span>
+                    </div>
+                    <div class="stretch-card__content">
+                        <ol class="stretch-steps">
+                            <li><strong>Neck side stretch:</strong> 20s/side</li>
+                            <li><strong>Shoulder rolls:</strong> 10 reps</li>
+                            <li><strong>Chest opener:</strong> 20s</li>
+                            <li><strong>Upper trap stretch:</strong> 20s/side</li>
+                        </ol>
+                        <div class="safety-note">
+                            <strong>⚠️ Safety:</strong> Move slowly, never force stretches, stop if you feel pain
+                        </div>
+                    </div>
+                </article>
+                
+                <article class="stretch-card">
+                    <div class="stretch-card__header">
+                        <h3 class="stretch-card__title">Back</h3>
+                        <span class="stretch-card__duration">3-5 min</span>
+                    </div>
+                    <div class="stretch-card__content">
+                        <ol class="stretch-steps">
+                            <li><strong>Cat-cow:</strong> 8 reps</li>
+                            <li><strong>Child's pose:</strong> 30s</li>
+                            <li><strong>Seated twist:</strong> 20s/side</li>
+                            <li><strong>Forward fold (gentle):</strong> 20s</li>
+                        </ol>
+                        <div class="safety-note">
+                            <strong>⚠️ Safety:</strong> Don't bounce, breathe deeply, listen to your body
+                        </div>
+                    </div>
+                </article>
+                
+                <article class="stretch-card">
+                    <div class="stretch-card__header">
+                        <h3 class="stretch-card__title">Hips & Legs</h3>
+                        <span class="stretch-card__duration">3-5 min</span>
+                    </div>
+                    <div class="stretch-card__content">
+                        <ol class="stretch-steps">
+                            <li><strong>Hip flexor stretch:</strong> 20s/side</li>
+                            <li><strong>Hamstring stretch:</strong> 20s/side</li>
+                            <li><strong>Standing quad stretch:</strong> 20s/side</li>
+                            <li><strong>Figure-4 glute stretch:</strong> 20s/side</li>
+                        </ol>
+                        <div class="safety-note">
+                            <strong>⚠️ Safety:</strong> Keep supporting leg slightly bent, stretch should feel good
+                        </div>
+                    </div>
+                </article>
+                
+                <article class="stretch-card">
+                    <div class="stretch-card__header">
+                        <h3 class="stretch-card__title">Full Body</h3>
+                        <span class="stretch-card__duration">5-7 min</span>
+                    </div>
+                    <div class="stretch-card__content">
+                        <ol class="stretch-steps">
+                            <li><strong>Neck side stretch:</strong> 20s/side</li>
+                            <li><strong>Chest opener:</strong> 20s</li>
+                            <li><strong>Cat-cow:</strong> 8 reps</li>
+                            <li><strong>Hip flexor:</strong> 20s/side</li>
+                            <li><strong>Hamstring:</strong> 20s/side</li>
+                            <li><strong>Child's pose:</strong> 30s</li>
+                        </ol>
+                        <div class="safety-note">
+                            <strong>⚠️ Safety:</strong> This is yoga-inspired - modify as needed, focus on breath
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    <!-- Daily Movement Tips Section -->
+    <section id="tips" class="page-section" aria-labelledby="tips-title">
+        <div class="container">
+            <div class="section-header">
+                <button class="back-btn" aria-label="Back to menu">
+                    <span class="back-btn__icon">←</span>
+                    <span class="back-btn__text">Back to Menu</span>
+                </button>
+                <h2 id="tips-title" class="section-title">Daily Movement Tips</h2>
+                <p class="section-subtitle">Small movements, big impact throughout your day</p>
+            </div>
+            
+            <!-- Tips Header -->
+            <div class="section-scroll-hint">
+                <p class="scroll-hint__text">
+                    <span>👈</span>
+                    <span>Scroll horizontally to see all tip categories</span>
+                    <span>👉</span>
+                </p>
+            </div>
+            
+            <div class="tips-grid">
+                <article class="tips-card">
+                    <div class="tips-card__header">
+                        <h3 class="tips-card__title">📚 At Desk / Studying</h3>
+                        <span class="tips-card__frequency">1 minute</span>
+                    </div>
+                    <div class="tips-card__content">
+                        <div class="tips-list">
+                            <div class="tip-item">
+                                <strong>Stand up and roll shoulders 10x</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>10 chair squats OR 30s march</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>5 deep breaths</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>Drink water</strong>
+                            </div>
+                        </div>
+                        <div class="challenge-box">
+                            <h4>💪 1-Minute Challenge</h4>
+                            <p><strong>Do 20s each:</strong><br>1) March in place<br>2) Wall push-ups<br>3) Stretch + breathe</p>
+                            <button class="challenge-timer" data-duration="60">
+                                <span class="button-text">Start 1-Min Timer</span>
+                                <span class="button-loader" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                
+                <article class="tips-card">
+                    <div class="tips-card__header">
+                        <h3 class="tips-card__title">🏫 In School / Outside</h3>
+                        <span class="tips-card__frequency">Daily habits</span>
+                    </div>
+                    <div class="tips-card__content">
+                        <div class="tips-list">
+                            <div class="tip-item">
+                                <strong>Take stairs for 1 floor today</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>Walk 5 minutes after meals</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>Stand tall: shoulders back, chin neutral</strong>
+                            </div>
+                        </div>
+                        <div class="challenge-box">
+                            <h4>💪 1-Minute Challenge</h4>
+                            <p><strong>1-Min Walk Challenge:</strong><br>Walk briskly for 60 seconds (or step-touch on the spot)</p>
+                            <button class="challenge-timer" data-duration="60">
+                                <span class="button-text">Start 1-Min Timer</span>
+                                <span class="button-loader" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+                
+                <article class="tips-card">
+                    <div class="tips-card__header">
+                        <h3 class="tips-card__title">🏠 At Home</h3>
+                        <span class="tips-card__frequency">Throughout day</span>
+                    </div>
+                    <div class="tips-card__content">
+                        <div class="tips-list">
+                            <div class="tip-item">
+                                <strong>Do a 5-min stretch while your phone charges</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>10 squats + 10 glute bridges while waiting for food</strong>
+                            </div>
+                            <div class="tip-item">
+                                <strong>1 song dance break = movement!</strong>
+                            </div>
+                        </div>
+                        <div class="challenge-box">
+                            <h4>💪 1-Minute Challenge</h4>
+                            <p><strong>1-Min Home Challenge:</strong><br>20s squats (or chair sit-stand)<br>20s marching<br>20s stretch + breathe</p>
+                            <button class="challenge-timer" data-duration="60">
+                                <span class="button-text">Start 1-Min Timer</span>
+                                <span class="button-loader" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            
+            <!-- Challenge Timer Modal -->
+            <div class="timer-modal" id="challenge-timer-modal" aria-hidden="true">
+                <div class="timer-modal__content">
+                    <div class="timer-modal__header">
+                        <h3 class="timer-modal__title">1-Minute Challenge</h3>
+                        <button class="challenge-timer-modal__close" aria-label="Close timer">×</button>
+                    </div>
+                    <div class="timer-display">
+                        <div class="timer-circle">
+                            <div class="challenge-timer-time">1:00</div>
+                        </div>
+                        <div class="timer-controls">
+                            <button class="challenge-timer-btn challenge-timer-btn--start">Start</button>
+                            <button class="challenge-timer-btn challenge-timer-btn--pause">Pause</button>
+                            <button class="challenge-timer-btn challenge-timer-btn--reset">Reset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Footer -->
     <footer class="footer" role="contentinfo">
         <div class="container">
@@ -169,8 +613,8 @@
     <!-- JavaScript -->
     <script src="js/app.js"></script>
     
-    <!-- Botpress Chat Widget (placeholder) -->
-    <!-- <script src="https://cdn.botpress.cloud/webchat/v0/inject.js"></script> -->
-    <!-- <script>window.botpressWebChat.init({...config})</script> -->
+    <!-- Botpress Webchat -->
+    <script src="https://cdn.botpress.cloud/webchat/v3.5/inject.js"></script>
+    <script src="https://files.bpcontent.cloud/2026/01/06/07/20260106073239-JYT1GDIF.js" defer></script>
 </body>
 </html>
