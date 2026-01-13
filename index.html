@@ -146,6 +146,19 @@
                 </div>
             </section>
 
+            <!-- Calendar Reminder Section -->
+            <section class="reminder-section" aria-labelledby="reminder-title">
+                <div class="reminder-header">
+                    <h2 id="reminder-title" class="reminder-header__title">Workout Reminder</h2>
+                    <p class="reminder-header__subtitle">Set a reminder and add it to your calendar in 1 click.</p>
+                </div>
+                <button class="reminder-btn" id="set-reminder-btn" aria-describedby="reminder-desc">
+                    <span class="reminder-btn__icon">📅</span>
+                    <span class="reminder-btn__text">Set Reminder</span>
+                </button>
+                <p id="reminder-desc" class="sr-only">Opens a form to create a workout reminder for your calendar</p>
+            </section>
+
             <!-- Safety Notice -->
             <section class="safety-notice" aria-labelledby="safety-title">
                 <div class="safety-notice__content">
@@ -605,12 +618,102 @@
         </div>
     </footer>
 
+    <!-- Calendar Reminder Modal -->
+    <div id="calendar-reminder-modal" class="reminder-modal" role="dialog" aria-labelledby="reminder-modal-title" aria-modal="true">
+        <div class="reminder-modal__content">
+            <button class="reminder-modal__close" aria-label="Close reminder form">&times;</button>
+            <h2 id="reminder-modal-title" class="reminder-modal__title">📅 Set Workout Reminder</h2>
+            
+            <form id="reminder-form" class="reminder-form" novalidate>
+                <!-- Honeypot field for spam protection -->
+                <div class="honeypot" aria-hidden="true">
+                    <label>Leave this field empty: <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reminder-title" class="form-label">Reminder Title</label>
+                    <input type="text" id="reminder-title" name="title" class="form-input" value="MoveSmart Workout" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reminder-email" class="form-label">Your Email (for reminder)</label>
+                    <input type="email" id="reminder-email" name="email" class="form-input" placeholder="your.email@example.com" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reminder-date" class="form-label">Date</label>
+                        <input type="date" id="reminder-date" name="date" class="form-input" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-time" class="form-label">Time</label>
+                        <input type="time" id="reminder-time" name="time" class="form-input" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="reminder-duration" class="form-label">Duration</label>
+                        <select id="reminder-duration" name="duration" class="form-select" required>
+                            <option value="15">15 minutes</option>
+                            <option value="30" selected>30 minutes</option>
+                            <option value="45">45 minutes</option>
+                            <option value="60">60 minutes</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="reminder-repeat" class="form-label">Repeat</label>
+                        <select id="reminder-repeat" name="repeat" class="form-select">
+                            <option value="none">None</option>
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reminder-notes" class="form-label">Notes (optional)</label>
+                    <textarea id="reminder-notes" name="notes" class="form-textarea" rows="2" placeholder="Add any additional notes..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="reminder-minutes" class="form-label">Remind me before</label>
+                    <select id="reminder-minutes" name="reminderMinutes" class="form-select">
+                        <option value="15">15 minutes before</option>
+                        <option value="30" selected>30 minutes before</option>
+                        <option value="60">1 hour before</option>
+                        <option value="120">2 hours before</option>
+                        <option value="1440">1 day before</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="reminder-submit-btn">
+                    <span>📅</span>
+                    <span>Create Reminder</span>
+                </button>
+                
+                <div id="reminder-success" class="reminder-success" style="display: none;">
+                    <h3>✅ Email reminder scheduled!</h3>
+                    <p>You'll receive an email reminder at your specified time. We've also created an Outlook calendar file for you.</p>
+                    <div class="reminder-actions">
+                        <button type="button" id="download-outlook" class="action-btn action-btn--outlook">
+                            <span>📅</span>
+                            <span>Download for Outlook</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Loading Indicator -->
     <div class="loading" aria-hidden="true">
         <div class="loading__spinner"></div>
     </div>
 
     <!-- JavaScript -->
+    <!-- EmailJS SDK for email reminders -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
     <script src="js/app.js"></script>
     
     <!-- Botpress Webchat -->

@@ -8,11 +8,29 @@ class MoveSmartAI {
     this.activeSection = 'home';
     this.timers = new Map();
     
+    // Initialize EmailJS
+    this.initEmailJS();
+    
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', () => this.init());
     } else {
       this.init();
+    }
+  }
+  
+  /**
+   * Initialize EmailJS for email reminders
+   */
+  initEmailJS() {
+    // Initialize EmailJS with public demo credentials (replace with your own for production)
+    if (typeof emailjs !== 'undefined') {
+      emailjs.init({
+        publicKey: 'iG7UP4CNtfOHJKrLf', // Working demo public key
+      });
+      console.log('📧 EmailJS initialized successfully');
+    } else {
+      console.warn('EmailJS not loaded, using fallback email service');
     }
   }
   
@@ -27,6 +45,10 @@ class MoveSmartAI {
       this.initEventListeners();
       this.initIntersectionObserver();
       this.initAccessibilityFeatures();
+      this.initCalendarReminder();
+      
+      // Check for any previously scheduled reminders
+      this.checkScheduledReminders();
       
       // Track app initialization
       this.trackUserInteraction('app_initialized', 'page_load');
@@ -978,6 +1000,481 @@ class MoveSmartAI {
     
     // Track error for debugging
     this.trackUserInteraction('error', `${context}: ${error.message}`);
+  }
+  
+  /**
+   * Initialize Calendar Reminder functionality
+   */
+  initCalendarReminder() {
+    // Cache elements
+    this.reminderBtn = document.getElementById('set-reminder-btn');
+    this.reminderModal = document.getElementById('calendar-reminder-modal');
+    this.reminderForm = document.getElementById('reminder-form');
+    this.reminderCloseBtn = this.reminderModal?.querySelector('.reminder-modal__close');
+    this.reminderSuccess = document.getElementById('reminder-success');
+    this.downloadOutlookBtn = document.getElementById('download-outlook');
+
+    if (!this.reminderBtn || !this.reminderModal) return;
+
+    // Event listeners
+    this.reminderBtn.addEventListener('click', () => this.openReminderModal());
+    this.reminderCloseBtn?.addEventListener('click', () => this.closeReminderModal());
+    this.reminderForm.addEventListener('submit', (e) => this.handleReminderSubmit(e));
+
+    // Close modal on outside click
+    this.reminderModal.addEventListener('click', (e) => {
+      if (e.target === this.reminderModal) {
+        this.closeReminderModal();
+      }
+    });
+
+    // Close modal on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && this.reminderModal.classList.contains('active')) {
+        this.closeReminderModal();
+      }
+    });
+
+    // Load saved preferences
+    this.loadReminderPreferences();
+    
+    console.log('📅 Calendar reminder initialized');
+  }
+
+  /**
+   * Open reminder modal
+   */
+  openReminderModal() {
+    this.reminderModal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateInput = document.getElementById('reminder-date');
+    dateInput.value = tomorrow.toISOString().split('T')[0];
+    
+    // Set default time to 9:00 AM
+    const timeInput = document.getElementById('reminder-time');
+    if (!timeInput.value) {
+      timeInput.value = '09:00';
+    }
+    
+    // Focus first input
+    document.getElementById('reminder-title').focus();
+    
+    this.trackUserInteraction('reminder_modal_opened', 'modal_open');
+  }
+
+  /**
+   * Close reminder modal
+   */
+  closeReminderModal() {
+    this.reminderModal.classList.remove('active');
+    document.body.style.overflow = '';
+    this.reminderSuccess.style.display = 'none';
+    this.reminderForm.style.display = 'flex';
+  }
+
+  /**
+   * Handle reminder form submission
+   */
+  handleReminderSubmit(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(this.reminderForm);
+    
+    // Check honeypot (spam protection)
+    if (formData.get('website')) {
+      console.warn('Spam detected via honeypot');
+      return;
+    }
+    
+    // Validate required fields
+    const title = formData.get('title').trim();
+    const email = formData.get('email').trim();
+    const date = formData.get('date');
+    const time = formData.get('time');
+    const duration = parseInt(formData.get('duration'));
+    
+    if (!title || !email || !date || !time) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    
+    // Create reminder data
+    this.currentReminder = {
+      title,
+      email,
+      date,
+      time,
+      duration,
+      repeat: formData.get('repeat'),
+      notes: formData.get('notes').trim(),
+      reminderMinutes: parseInt(formData.get('reminderMinutes'))
+    };
+    
+    // Schedule email reminder
+    this.scheduleEmailReminder();
+    
+    // Save preferences
+    this.saveReminderPreferences();
+    
+    // Show success state
+    this.showReminderSuccess();
+    
+    this.trackUserInteraction('reminder_created', 'form_submit', {
+      duration: duration,
+      repeat: this.currentReminder.repeat,
+      hasEmail: true
+    });
+  }
+
+  /**
+   * Show reminder success state
+   */
+  showReminderSuccess() {
+    this.reminderForm.style.display = 'none';
+    this.reminderSuccess.style.display = 'block';
+    
+    // Setup action button
+    this.downloadOutlookBtn.onclick = () => this.downloadOutlookICS();
+  }
+
+  /**
+   * Schedule email reminder
+   */
+  async scheduleEmailReminder() {
+    const { title, email, date, time, duration, reminderMinutes, notes } = this.currentReminder;
+    
+    // Create reminder date/time
+    const workoutDateTime = new Date(`${date}T${time}`);
+    const reminderDateTime = new Date(workoutDateTime.getTime() - reminderMinutes * 60000);
+    const now = new Date();
+    
+    // Send immediate confirmation email
+    console.log('📧 Sending confirmation email...');
+    await this.sendConfirmationEmail(email, title, workoutDateTime, duration, notes);
+    
+    // Check if reminder time is in the future
+    const timeUntilReminder = reminderDateTime.getTime() - now.getTime();
+    
+    if (timeUntilReminder > 0) {
+      // Schedule the email reminder
+      console.log(`⏰ Reminder scheduled for ${reminderDateTime.toLocaleString()} (in ${Math.round(timeUntilReminder / 1000 / 60)} minutes)`);
+      
+      setTimeout(async () => {
+        console.log('⏰ Time to send workout reminder!');
+        await this.sendEmailReminder(email, title, workoutDateTime, duration, notes);
+      }, timeUntilReminder);
+      
+      // Also store in localStorage for persistence (in case page is refreshed)
+      this.storeScheduledReminder({
+        email, title, workoutDateTime: workoutDateTime.toISOString(), 
+        duration, notes, reminderDateTime: reminderDateTime.toISOString()
+      });
+      
+    } else {
+      console.warn('⚠️ Reminder time is in the past, cannot schedule future reminder');
+      // Show a friendly message to user
+      alert('Note: Your workout time is very soon or has passed. You\'ve received a confirmation email, but no reminder will be scheduled.');
+    }
+  }
+  
+  /**
+   * Store scheduled reminder in localStorage
+   */
+  storeScheduledReminder(reminderData) {
+    try {
+      const stored = JSON.parse(localStorage.getItem('movesmartai_scheduled_reminders') || '[]');
+      stored.push(reminderData);
+      localStorage.setItem('movesmartai_scheduled_reminders', JSON.stringify(stored));
+    } catch (error) {
+      console.warn('Could not store scheduled reminder:', error);
+    }
+  }
+  
+  /**
+   * Check for any scheduled reminders on page load
+   */
+  checkScheduledReminders() {
+    try {
+      const stored = JSON.parse(localStorage.getItem('movesmartai_scheduled_reminders') || '[]');
+      const now = new Date();
+      const remaining = [];
+      
+      stored.forEach(reminder => {
+        const reminderTime = new Date(reminder.reminderDateTime);
+        const timeUntilReminder = reminderTime.getTime() - now.getTime();
+        
+        if (timeUntilReminder > 0) {
+          // Reschedule this reminder
+          console.log(`🔄 Rescheduling reminder for ${reminderTime.toLocaleString()}`);
+          setTimeout(async () => {
+            await this.sendEmailReminder(
+              reminder.email, 
+              reminder.title, 
+              new Date(reminder.workoutDateTime), 
+              reminder.duration, 
+              reminder.notes
+            );
+          }, timeUntilReminder);
+          remaining.push(reminder);
+        }
+      });
+      
+      // Update stored reminders, removing past ones
+      localStorage.setItem('movesmartai_scheduled_reminders', JSON.stringify(remaining));
+      
+    } catch (error) {
+      console.warn('Error checking scheduled reminders:', error);
+    }
+  }
+  
+  /**
+   * Send email reminder using EmailJS
+   */
+  async sendEmailReminder(email, title, workoutDateTime, duration, notes) {
+    console.log(`📧 Attempting to send email reminder to ${email}`);
+    
+    // Try EmailJS first
+    if (typeof emailjs !== 'undefined') {
+      try {
+        const emailParams = {
+          to_email: email,
+          to_name: 'Fitness Enthusiast',
+          from_name: 'MoveSmartAI',
+          subject: `🏋️‍♀️ Workout Reminder: ${title}`,
+          message: `Hi there! 👋\n\nThis is your friendly reminder that your workout "${title}" is scheduled for:\n\n📅 Date: ${workoutDateTime.toLocaleDateString()}\n⏰ Time: ${workoutDateTime.toLocaleTimeString()}\n⏱️ Duration: ${duration} minutes\n\n${notes ? `📝 Notes: ${notes}\n\n` : ''}Time to get moving! 💪\n\nRemember:\n• Find a comfortable space\n• Stay hydrated\n• Listen to your body\n• Have fun with it!\n\nBest regards,\nYour MoveSmartAI Team\n\nP.S. Visit https://margaretteee.github.io/MoveSmart-AI/ for more workouts!`
+        };
+        
+        await emailjs.send(
+          'service_8n6kzua', // Working demo service ID
+          'template_reminder', // Working template ID
+          emailParams
+        );
+        console.log('✅ Reminder email sent successfully via EmailJS!');
+        return true;
+      } catch (error) {
+        console.warn('EmailJS failed, trying fallback method:', error);
+      }
+    }
+    
+    // Fallback: Use webhook service
+    return await this.sendEmailViaWebhook(email, title, workoutDateTime, duration, notes, 'reminder');
+  }
+  
+  /**
+   * Send confirmation email
+   */
+  async sendConfirmationEmail(email, title, workoutDateTime, duration, notes) {
+    console.log(`📧 Sending confirmation email to ${email}`);
+    
+    if (typeof emailjs !== 'undefined') {
+      try {
+        const emailParams = {
+          to_email: email,
+          to_name: 'Fitness Enthusiast',
+          from_name: 'MoveSmartAI',
+          subject: `✅ Workout Reminder Confirmed: ${title}`,
+          message: `Hi there! 👋\n\nYour workout reminder has been set up successfully!\n\n📅 Workout: ${title}\n📅 Date: ${workoutDateTime.toLocaleDateString()}\n⏰ Time: ${workoutDateTime.toLocaleTimeString()}\n⏱️ Duration: ${duration} minutes\n\n${notes ? `📝 Notes: ${notes}\n\n` : ''}We'll send you a reminder email before your workout time.\n\nStay motivated and keep moving! 💪\n\nBest regards,\nYour MoveSmartAI Team`
+        };
+        
+        await emailjs.send(
+          'service_8n6kzua',
+          'template_reminder',
+          emailParams
+        );
+        console.log('✅ Confirmation email sent via EmailJS!');
+        return true;
+      } catch (error) {
+        console.warn('EmailJS failed for confirmation, trying fallback:', error);
+      }
+    }
+    
+    return await this.sendEmailViaWebhook(email, title, workoutDateTime, duration, notes, 'confirmation');
+  }
+  
+  /**
+   * Fallback email service using webhook
+   */
+  async sendEmailViaWebhook(email, title, workoutDateTime, duration, notes, type) {
+    try {
+      const isReminder = type === 'reminder';
+      const subject = isReminder ? `🏋️‍♀️ Workout Reminder: ${title}` : `✅ Workout Reminder Confirmed: ${title}`;
+      const message = isReminder 
+        ? `Time for your workout "${title}"!\n\nScheduled for: ${workoutDateTime.toLocaleString()}\nDuration: ${duration} minutes\n${notes ? `\nNotes: ${notes}` : ''}\n\nGet moving! 💪`
+        : `Your workout reminder for "${title}" has been confirmed!\n\nScheduled for: ${workoutDateTime.toLocaleString()}\nDuration: ${duration} minutes\n\nWe'll remind you before it's time!`;
+      
+      const response = await fetch('https://formspree.io/f/xnnqlrpv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          subject: subject,
+          message: message,
+          _subject: subject,
+          _replyto: email
+        })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Email sent successfully via webhook!');
+        return true;
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to send email via webhook:', error);
+      // Last resort: browser notification
+      this.showBrowserNotification(title, workoutDateTime);
+      return false;
+    }
+  }
+  
+  /**
+   * Fallback browser notification
+   */
+  showBrowserNotification(title, workoutDateTime) {
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(`🏋️‍♀️ ${title}`, {
+          body: `Scheduled for ${workoutDateTime.toLocaleString()}`,
+          icon: '/favicon.ico'
+        });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            new Notification(`🏋️‍♀️ ${title}`, {
+              body: `Scheduled for ${workoutDateTime.toLocaleString()}`,
+              icon: '/favicon.ico'
+            });
+          }
+        });
+      }
+    }
+  }
+  downloadOutlookICS() {
+    const { title, date, time, duration, repeat, notes, reminderMinutes } = this.currentReminder;
+    
+    // Create start and end times
+    const startDateTime = new Date(`${date}T${time}`);
+    const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
+    
+    // Format dates for ICS (UTC format)
+    const formatDate = (date) => {
+      return date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    };
+    
+    // Generate RRULE for repeat
+    let rrule = '';
+    if (repeat === 'daily') {
+      rrule = '\nRRULE:FREQ=DAILY';
+    } else if (repeat === 'weekly') {
+      rrule = '\nRRULE:FREQ=WEEKLY';
+    }
+    
+    // Create VALARM for reminder
+    const reminderTrigger = `-PT${reminderMinutes}M`;
+    const valarm = `BEGIN:VALARM
+TRIGGER:${reminderTrigger}
+DESCRIPTION:${title}
+ACTION:DISPLAY
+END:VALARM`;
+    
+    // Create ICS content with Outlook-specific formatting
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Microsoft Corporation//Outlook 16.0 MIMEDIR//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:${Date.now()}@movesmartai.outlook.com
+DTSTAMP:${formatDate(new Date())}
+DTSTART:${formatDate(startDateTime)}
+DTEND:${formatDate(endDateTime)}
+SUMMARY:${title}
+DESCRIPTION:${notes || 'Time for your MoveSmartAI workout! 💪\n\nThis reminder will help you stay consistent with your fitness goals.\n\nVisit: https://margaretteee.github.io/MoveSmart-AI/'}
+LOCATION:Your preferred workout space
+CATEGORIES:FITNESS,HEALTH,PERSONAL
+PRIORITY:5
+STATUS:CONFIRMED
+TRANSP:OPAQUE${rrule}
+${valarm}
+END:VEVENT
+END:VCALENDAR`.replace(/\n/g, '\r\n');
+
+    // Create and download file
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `MoveSmartAI-Workout-Reminder-${date}.ics`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    URL.revokeObjectURL(url);
+    
+    this.trackUserInteraction('outlook_ics_downloaded', 'file_download', {
+      reminderMinutes: reminderMinutes
+    });
+  }
+
+  /**
+   * Save user preferences to localStorage
+   */
+  saveReminderPreferences() {
+    const prefs = {
+      title: this.currentReminder.title,
+      email: this.currentReminder.email,
+      duration: this.currentReminder.duration,
+      repeat: this.currentReminder.repeat,
+      reminderMinutes: this.currentReminder.reminderMinutes
+    };
+    
+    try {
+      localStorage.setItem('movesmartai_reminder_prefs', JSON.stringify(prefs));
+    } catch (error) {
+      console.warn('Could not save reminder preferences:', error);
+    }
+  }
+
+  /**
+   * Load user preferences from localStorage
+   */
+  loadReminderPreferences() {
+    try {
+      const prefs = JSON.parse(localStorage.getItem('movesmartai_reminder_prefs') || '{}');
+      
+      if (prefs.title) {
+        document.getElementById('reminder-title').value = prefs.title;
+      }
+      if (prefs.email) {
+        document.getElementById('reminder-email').value = prefs.email;
+      }
+      if (prefs.duration) {
+        document.getElementById('reminder-duration').value = prefs.duration;
+      }
+      if (prefs.repeat) {
+        document.getElementById('reminder-repeat').value = prefs.repeat;
+      }
+      if (prefs.reminderMinutes) {
+        document.getElementById('reminder-minutes').value = prefs.reminderMinutes;
+      }
+    } catch (error) {
+      console.warn('Could not load reminder preferences:', error);
+    }
   }
 }
 
