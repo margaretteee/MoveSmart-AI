@@ -160,7 +160,15 @@
                     <span class="reminder-btn__icon">📅</span>
                     <span class="reminder-btn__text">Set Reminder</span>
                 </button>
+                
+                <!-- Test Email Button (for development/testing) -->
+                <button class="reminder-btn" id="test-email-btn" style="margin-top: 10px; background: #10B981;" aria-describedby="test-email-desc">
+                    <span class="reminder-btn__icon">📧</span>
+                    <span class="reminder-btn__text">Test Email Service</span>
+                </button>
+                
                 <p id="reminder-desc" class="sr-only">Opens a form to create a workout reminder for your calendar</p>
+                <p id="test-email-desc" class="sr-only">Tests the email reminder functionality</p>
             </section>
 
             <!-- Safety Notice -->
@@ -718,6 +726,9 @@
     <!-- JavaScript -->
     <!-- EmailJS SDK for email reminders -->
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+    <!-- Email configuration -->
+    <script src="js/config.js"></script>
+    <!-- Main application -->
     <script src="js/app.js"></script>
     
     <!-- Botpress Webchat -->

@@ -23,14 +23,15 @@ class MoveSmartAI {
    * Initialize EmailJS for email reminders
    */
   initEmailJS() {
-    // Initialize EmailJS with public demo credentials (replace with your own for production)
-    if (typeof emailjs !== 'undefined') {
+    // Initialize EmailJS with configuration from config file
+    if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       emailjs.init({
-        publicKey: 'iG7UP4CNtfOHJKrLf', // Working demo public key
+        publicKey: window.EMAIL_CONFIG.publicKey,
+        limitRate: window.EMAIL_CONFIG.limitRate
       });
-      console.log('📧 EmailJS initialized successfully');
+      console.log('📧 EmailJS initialized successfully with config');
     } else {
-      console.warn('EmailJS not loaded, using fallback email service');
+      console.warn('EmailJS or EMAIL_CONFIG not loaded, using fallback email service');
     }
   }
   
@@ -1008,6 +1009,7 @@ class MoveSmartAI {
   initCalendarReminder() {
     // Cache elements
     this.reminderBtn = document.getElementById('set-reminder-btn');
+    this.testEmailBtn = document.getElementById('test-email-btn');
     this.reminderModal = document.getElementById('calendar-reminder-modal');
     this.reminderForm = document.getElementById('reminder-form');
     this.reminderCloseBtn = this.reminderModal?.querySelector('.reminder-modal__close');
@@ -1018,6 +1020,7 @@ class MoveSmartAI {
 
     // Event listeners
     this.reminderBtn.addEventListener('click', () => this.openReminderModal());
+    this.testEmailBtn?.addEventListener('click', () => this.testEmailService());
     this.reminderCloseBtn?.addEventListener('click', () => this.closeReminderModal());
     this.reminderForm.addEventListener('submit', (e) => this.handleReminderSubmit(e));
 
@@ -1074,6 +1077,54 @@ class MoveSmartAI {
     document.body.style.overflow = '';
     this.reminderSuccess.style.display = 'none';
     this.reminderForm.style.display = 'flex';
+  }
+
+  /**
+   * Test email service functionality
+   */
+  async testEmailService() {
+    const testEmail = prompt('Enter your email to test the email service:', '');
+    if (!testEmail || !testEmail.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+
+    try {
+      console.log('🧪 Testing email service...');
+      
+      // Show loading state
+      const originalText = this.testEmailBtn.innerHTML;
+      this.testEmailBtn.innerHTML = '<span>⏳</span><span>Testing...</span>';
+      this.testEmailBtn.disabled = true;
+      
+      // Test with current date/time
+      const testDate = new Date();
+      testDate.setMinutes(testDate.getMinutes() + 30); // 30 minutes from now
+      
+      const success = await this.sendConfirmationEmail(
+        testEmail,
+        'Email Test - MoveSmartAI',
+        testDate,
+        30,
+        'This is a test email to verify the email service is working correctly.'
+      );
+      
+      if (success) {
+        alert('✅ Test email sent successfully! Check your inbox.');
+        console.log('✅ Test email sent successfully');
+      } else {
+        alert('❌ Test email failed. Check the console for details.');
+        console.log('❌ Test email failed');
+      }
+    } catch (error) {
+      console.error('❌ Email test error:', error);
+      alert('❌ Email test failed: ' + error.message);
+    } finally {
+      // Restore button state
+      const originalText = '<span class="reminder-btn__icon">📧</span><span class="reminder-btn__text">Test Email Service</span>';
+      this.testEmailBtn.innerHTML = originalText;
+      this.testEmailBtn.disabled = false;
+    }
   }
 
   /**
@@ -1245,7 +1296,7 @@ class MoveSmartAI {
     console.log(`📧 Attempting to send email reminder to ${email}`);
     
     // Try EmailJS first
-    if (typeof emailjs !== 'undefined') {
+    if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
           to_email: email,
@@ -1256,8 +1307,8 @@ class MoveSmartAI {
         };
         
         await emailjs.send(
-          'service_8n6kzua', // Working demo service ID
-          'template_reminder', // Working template ID
+          window.EMAIL_CONFIG.serviceId,
+          window.EMAIL_CONFIG.templateId,
           emailParams
         );
         console.log('✅ Reminder email sent successfully via EmailJS!');
@@ -1277,7 +1328,7 @@ class MoveSmartAI {
   async sendConfirmationEmail(email, title, workoutDateTime, duration, notes) {
     console.log(`📧 Sending confirmation email to ${email}`);
     
-    if (typeof emailjs !== 'undefined') {
+    if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
           to_email: email,
@@ -1288,8 +1339,8 @@ class MoveSmartAI {
         };
         
         await emailjs.send(
-          'service_8n6kzua',
-          'template_reminder',
+          window.EMAIL_CONFIG.serviceId,
+          window.EMAIL_CONFIG.templateId,
           emailParams
         );
         console.log('✅ Confirmation email sent via EmailJS!');
