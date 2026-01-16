@@ -8,24 +8,10 @@
     </linearGradient>
   </defs>
   
-  <!-- Background with rounded corners for iOS -->
+  <!-- Background -->
   <rect width="180" height="180" rx="32" fill="url(#appleIconGradient)"/>
   
-  <!-- MoveSmartAI logo design -->
-  <!-- Main M shape -->
-  <path d="M35 135 L35 45 L55 45 L90 90 L125 45 L145 45 L145 135 L125 135 L125 75 L90 115 L55 75 L55 135 Z" fill="#ffffff" opacity="0.95"/>
-  
-  <!-- AI circuit elements -->
-  <circle cx="60" cy="60" r="4" fill="#ffffff" opacity="0.8"/>
-  <circle cx="120" cy="60" r="4" fill="#ffffff" opacity="0.8"/>
-  <circle cx="90" cy="120" r="4" fill="#ffffff" opacity="0.8"/>
-  
-  <!-- Connection lines -->
-  <line x1="60" y1="60" x2="90" y2="45" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
-  <line x1="120" y1="60" x2="90" y2="45" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
-  <line x1="90" y1="120" x2="60" y2="90" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
-  <line x1="90" y1="120" x2="120" y2="90" stroke="#ffffff" stroke-width="2" opacity="0.6"/>
-  
-  <!-- Movement arrow indicator -->
-  <path d="M130 150 L140 140 L150 150 L140 145 L140 155 Z" fill="#ffffff" opacity="0.7"/>
+  <!-- Large bold M for Move -->
+  <path d="M30 135 L30 45 L50 45 L90 90 L130 45 L150 45 L150 135 L130 135 L130 75 L90 115 L50 75 L50 135 Z" fill="#ffffff"/>
+</svg>
 </svg>
