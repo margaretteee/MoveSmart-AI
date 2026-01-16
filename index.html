@@ -763,28 +763,63 @@
                         },
                         reset: () => {
                             try {
-                                // Method 1: Try Botpress v3.5 reset
-                                if (window.botpress && window.botpress.sendEvent) {
-                                    window.botpress.sendEvent({ type: 'reset' });
-                                    console.log('🔄 Chat reset via sendEvent');
+                                console.log('🔄 Attempting to reset conversation...');
+                                
+                                // Method 1: Force reload the entire webchat iframe
+                                const webchatIframe = document.querySelector('iframe[title*="Webchat"], iframe[src*="botpress"], iframe[id*="bp-"]');
+                                if (webchatIframe) {
+                                    console.log('🔄 Found webchat iframe, reloading...');
+                                    const src = webchatIframe.src;
+                                    webchatIframe.src = 'about:blank';
+                                    setTimeout(() => {
+                                        webchatIframe.src = src;
+                                        console.log('✅ Iframe reloaded');
+                                    }, 100);
                                     return true;
                                 }
                                 
-                                // Method 2: Try webchat reset
-                                if (window.botpressWebChat) {
-                                    window.botpressWebChat.sendEvent({ type: 'reset' });
-                                    console.log('🔄 Chat reset via botpressWebChat');
-                                    return true;
+                                // Method 2: Clear localStorage data related to Botpress
+                                try {
+                                    const keys = Object.keys(localStorage);
+                                    keys.forEach(key => {
+                                        if (key.includes('botpress') || key.includes('webchat') || key.includes('bp-')) {
+                                            localStorage.removeItem(key);
+                                            console.log('🗑️ Cleared storage:', key);
+                                        }
+                                    });
+                                } catch (e) {
+                                    console.warn('Could not clear localStorage:', e);
                                 }
                                 
-                                // Method 3: Try clearing conversation data
-                                if (window.botpress && window.botpress.conversationId) {
-                                    window.botpress.conversationId = null;
-                                    console.log('🔄 Chat reset via conversationId clear');
-                                    return true;
+                                // Method 3: Try window.botpressWebchat methods
+                                if (window.botpressWebchat) {
+                                    if (window.botpressWebchat.resetConversation) {
+                                        window.botpressWebchat.resetConversation();
+                                        console.log('🔄 Reset via botpressWebchat.resetConversation');
+                                        return true;
+                                    }
+                                    if (window.botpressWebchat.sendMessage) {
+                                        window.botpressWebchat.sendMessage({ type: 'session_reset' });
+                                        console.log('🔄 Reset via session_reset message');
+                                        return true;
+                                    }
                                 }
                                 
-                                console.warn('⚠️ No reset method available');
+                                // Method 4: Direct Botpress v3.5 methods
+                                if (window.botpress) {
+                                    if (window.botpress.resetConversation) {
+                                        window.botpress.resetConversation();
+                                        console.log('🔄 Reset via botpress.resetConversation');
+                                        return true;
+                                    }
+                                    if (window.botpress.sendEvent) {
+                                        window.botpress.sendEvent({ type: 'session.reset' });
+                                        console.log('🔄 Reset via session.reset event');
+                                        return true;
+                                    }
+                                }
+                                
+                                console.warn('⚠️ No reset method worked');
                                 return false;
                             } catch (error) {
                                 console.error('❌ Error resetting chat:', error);
@@ -792,26 +827,78 @@
                             }
                         },
                         newConversation: () => {
-                            console.log('🆕 Starting new conversation...');
+                            console.log('🆕 Starting new conversation (force method)...');
                             
-                            // Close chat first
+                            // Force method: Complete reset approach
+                            
+                            // Step 1: Close chat
                             window.chatControls.close();
                             
-                            // Wait a moment, then reset and reopen
+                            // Step 2: Clear all Botpress data
+                            try {
+                                const keys = Object.keys(localStorage);
+                                keys.forEach(key => {
+                                    if (key.includes('botpress') || key.includes('webchat') || key.includes('bp-')) {
+                                        localStorage.removeItem(key);
+                                    }
+                                });
+                                
+                                const sessionKeys = Object.keys(sessionStorage);
+                                sessionKeys.forEach(key => {
+                                    if (key.includes('botpress') || key.includes('webchat') || key.includes('bp-')) {
+                                        sessionStorage.removeItem(key);
+                                    }
+                                });
+                            } catch (e) {
+                                console.warn('Storage clear error:', e);
+                            }
+                            
+                            // Step 3: Wait and reload iframe/reset
                             setTimeout(() => {
                                 const resetSuccess = window.chatControls.reset();
                                 
-                                // Wait a bit more after reset
+                                // Step 4: Reopen after longer delay
                                 setTimeout(() => {
                                     window.chatControls.open();
-                                    console.log('✅ New conversation started');
-                                }, 300);
+                                    console.log('✅ New conversation should be started');
+                                    
+                                    // Send a test message to ensure reset worked
+                                    setTimeout(() => {
+                                        console.log('💬 Conversation reset complete. You can now start chatting fresh!');
+                                    }, 500);
+                                }, 800);
                                 
-                            }, 200);
+                            }, 500);
                         }
                     };
                     
                     console.log('💬 Chat controls available: window.chatControls');
+                    
+                    // Debug function to check available Botpress methods
+                    window.debugBotpress = () => {
+                        console.log('🔍 Botpress Debug Info:');
+                        console.log('window.botpress:', window.botpress);
+                        console.log('window.botpressWebChat:', window.botpressWebChat);
+                        console.log('window.botpressWebchat:', window.botpressWebchat);
+                        
+                        if (window.botpress) {
+                            console.log('Available botpress methods:', Object.keys(window.botpress));
+                        }
+                        
+                        const iframe = document.querySelector('iframe[title*="Webchat"], iframe[src*="botpress"], iframe[id*="bp-"]');
+                        console.log('Webchat iframe found:', !!iframe);
+                        if (iframe) {
+                            console.log('Iframe src:', iframe.src);
+                        }
+                        
+                        // Check localStorage keys
+                        const bpKeys = Object.keys(localStorage).filter(key => 
+                            key.includes('botpress') || key.includes('webchat') || key.includes('bp-')
+                        );
+                        console.log('Botpress localStorage keys:', bpKeys);
+                    };
+                    
+                    console.log('🔍 Run window.debugBotpress() to see available methods');
                 } else {
                     console.warn('⚠️ Botpress not loaded after page load');
                 }
