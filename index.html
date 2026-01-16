@@ -747,21 +747,67 @@
                     
                     // Add global chat controls to window for easy debugging
                     window.chatControls = {
-                        open: () => window.botpress.open && window.botpress.open(),
-                        close: () => window.botpress.close && window.botpress.close(),
+                        open: () => {
+                            if (window.botpress && window.botpress.open) {
+                                window.botpress.open();
+                            } else if (window.botpressWebChat) {
+                                window.botpressWebChat.sendEvent({ type: 'show' });
+                            }
+                        },
+                        close: () => {
+                            if (window.botpress && window.botpress.close) {
+                                window.botpress.close();
+                            } else if (window.botpress && window.botpress.hide) {
+                                window.botpress.hide();
+                            }
+                        },
                         reset: () => {
-                            if (window.botpress.sendEvent) {
-                                window.botpress.sendEvent({ type: 'reset' });
-                                console.log('🔄 Chat conversation reset');
+                            try {
+                                // Method 1: Try Botpress v3.5 reset
+                                if (window.botpress && window.botpress.sendEvent) {
+                                    window.botpress.sendEvent({ type: 'reset' });
+                                    console.log('🔄 Chat reset via sendEvent');
+                                    return true;
+                                }
+                                
+                                // Method 2: Try webchat reset
+                                if (window.botpressWebChat) {
+                                    window.botpressWebChat.sendEvent({ type: 'reset' });
+                                    console.log('🔄 Chat reset via botpressWebChat');
+                                    return true;
+                                }
+                                
+                                // Method 3: Try clearing conversation data
+                                if (window.botpress && window.botpress.conversationId) {
+                                    window.botpress.conversationId = null;
+                                    console.log('🔄 Chat reset via conversationId clear');
+                                    return true;
+                                }
+                                
+                                console.warn('⚠️ No reset method available');
+                                return false;
+                            } catch (error) {
+                                console.error('❌ Error resetting chat:', error);
+                                return false;
                             }
                         },
                         newConversation: () => {
-                            if (window.moveSmartAI && window.moveSmartAI.newConversation) {
-                                window.moveSmartAI.newConversation();
-                            } else {
-                                window.chatControls.reset();
-                                window.chatControls.open();
-                            }
+                            console.log('🆕 Starting new conversation...');
+                            
+                            // Close chat first
+                            window.chatControls.close();
+                            
+                            // Wait a moment, then reset and reopen
+                            setTimeout(() => {
+                                const resetSuccess = window.chatControls.reset();
+                                
+                                // Wait a bit more after reset
+                                setTimeout(() => {
+                                    window.chatControls.open();
+                                    console.log('✅ New conversation started');
+                                }, 300);
+                                
+                            }, 200);
                         }
                     };
                     

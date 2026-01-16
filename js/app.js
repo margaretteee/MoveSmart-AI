@@ -859,42 +859,75 @@ class MoveSmartAI {
   startNewConversation() {
     console.log('🔄 Starting new conversation...');
     
-    if (typeof window.botpress !== 'undefined') {
-      try {
-        // Reset the conversation
-        if (window.botpress.sendEvent) {
-          window.botpress.sendEvent({ type: 'reset' });
+    try {
+      // Method 1: Use global chat controls if available
+      if (window.chatControls && window.chatControls.newConversation) {
+        window.chatControls.newConversation();
+        return;
+      }
+      
+      // Method 2: Direct Botpress methods
+      if (typeof window.botpress !== 'undefined') {
+        // Close first
+        if (window.botpress.close) {
+          window.botpress.close();
         }
         
-        // Clear conversation history
-        if (window.botpress.clear) {
-          window.botpress.clear();
-        }
+        // Wait and reset
+        setTimeout(() => {
+          // Try multiple reset methods
+          let resetSuccess = false;
+          
+          if (window.botpress.sendEvent) {
+            window.botpress.sendEvent({ type: 'reset' });
+            resetSuccess = true;
+          } else if (window.botpress.clear) {
+            window.botpress.clear();
+            resetSuccess = true;
+          } else if (window.botpress.conversationId) {
+            window.botpress.conversationId = null;
+            resetSuccess = true;
+          }
+          
+          // Reopen after reset
+          setTimeout(() => {
+            if (window.botpress.open) {
+              window.botpress.open();
+            }
+            
+            if (resetSuccess) {
+              console.log('✅ New conversation started successfully');
+            } else {
+              console.warn('⚠️ Reset may not have worked, but chat reopened');
+            }
+          }, 300);
+          
+        }, 200);
         
-        // Open the chat widget
-        if (window.botpress.open) {
-          window.botpress.open();
-        }
-        
-        console.log('✅ New conversation started');
         this.trackUserInteraction('chat_new_conversation', 'botpress_reset');
         
-      } catch (error) {
-        console.warn('Error starting new conversation:', error);
-        // Fallback: just open the chat
+      } else if (typeof window.botpressWebChat !== 'undefined') {
+        // Alternative method for WebChat
+        try {
+          window.botpressWebChat.sendEvent({ type: 'hide' });
+          setTimeout(() => {
+            window.botpressWebChat.sendEvent({ type: 'reset' });
+            setTimeout(() => {
+              window.botpressWebChat.sendEvent({ type: 'show' });
+            }, 300);
+          }, 200);
+        } catch (error) {
+          console.warn('Error with WebChat new conversation:', error);
+          this.openChatWidget();
+        }
+      } else {
+        console.warn('Botpress not available for new conversation, opening normally');
         this.openChatWidget();
       }
-    } else if (typeof window.botpressWebChat !== 'undefined') {
-      try {
-        // Alternative method for Botpress WebChat
-        window.botpressWebChat.sendEvent({ type: 'reset' });
-        window.botpressWebChat.sendEvent({ type: 'show' });
-      } catch (error) {
-        console.warn('Error with alternative new conversation method:', error);
-        this.openChatWidget();
-      }
-    } else {
-      console.warn('Botpress not available for new conversation');
+      
+    } catch (error) {
+      console.error('Error starting new conversation:', error);
+      // Fallback: just open the chat
       this.openChatWidget();
     }
   }
