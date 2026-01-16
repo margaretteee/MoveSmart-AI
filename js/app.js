@@ -1425,36 +1425,31 @@ This is an automated reminder from MoveSmartAI. You scheduled this reminder on $
     if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
-          user_email: email,
-          user_name: 'Fitness Enthusiast',
+          to_email: email,
+          to_name: 'Fitness Enthusiast',
+          from_name: 'MoveSmartAI',
           subject: `🏋️‍♀️ Workout Reminder: ${title}`,
-          message_html: `
-            <h2>🏋️‍♀️ Workout Reminder: ${title}</h2>
-            <p>Hi there! 👋</p>
-            <p>This is your friendly reminder that your workout "<strong>${title}</strong>" is scheduled for:</p>
-            
-            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>📅 Date:</strong> ${workoutDateTime.toLocaleDateString()}</p>
-              <p><strong>⏰ Time:</strong> ${workoutDateTime.toLocaleTimeString()}</p>
-              <p><strong>⏱️ Duration:</strong> ${duration} minutes</p>
-              ${notes ? `<p><strong>📝 Notes:</strong> ${notes}</p>` : ''}
-            </div>
-            
-            <p><strong>Time to get moving! 💪</strong></p>
-            
-            <p><strong>Remember:</strong></p>
-            <ul>
-              <li>Find a comfortable space</li>
-              <li>Stay hydrated</li>
-              <li>Listen to your body</li>
-              <li>Have fun with it!</li>
-            </ul>
-            
-            <p>Best regards,<br>
-            Your MoveSmartAI Team</p>
-            
-            <p><small>P.S. Visit <a href="https://margaretteee.github.io/MoveSmart-AI/">MoveSmartAI</a> for more workouts!</small></p>
-          `
+          message: `Hi there! 👋
+
+This is your friendly reminder that your workout "${title}" is scheduled for:
+
+📅 Date: ${workoutDateTime.toLocaleDateString()}
+⏰ Time: ${workoutDateTime.toLocaleTimeString()}
+⏱️ Duration: ${duration} minutes
+${notes ? `📝 Notes: ${notes}` : ''}
+
+Time to get moving! 💪
+
+Remember:
+• Find a comfortable space
+• Stay hydrated
+• Listen to your body
+• Have fun with it!
+
+Best regards,
+Your MoveSmartAI Team
+
+P.S. Visit https://margaretteee.github.io/MoveSmart-AI/ for more workouts!`
         };
         
         await emailjs.send(
@@ -1482,28 +1477,26 @@ This is an automated reminder from MoveSmartAI. You scheduled this reminder on $
     if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
-          user_email: email,
-          user_name: 'Fitness Enthusiast',
+          to_email: email,
+          to_name: 'Fitness Enthusiast',
+          from_name: 'MoveSmartAI',
           subject: `✅ Workout Reminder Confirmed: ${title}`,
-          message_html: `
-            <h2>✅ Workout Reminder Confirmed</h2>
-            <p>Hi there! 👋</p>
-            <p>Your workout reminder has been set up successfully!</p>
-            
-            <div style="background: #f0fff0; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <p><strong>📅 Workout:</strong> ${title}</p>
-              <p><strong>📅 Date:</strong> ${workoutDateTime.toLocaleDateString()}</p>
-              <p><strong>⏰ Time:</strong> ${workoutDateTime.toLocaleTimeString()}</p>
-              <p><strong>⏱️ Duration:</strong> ${duration} minutes</p>
-              ${notes ? `<p><strong>📝 Notes:</strong> ${notes}</p>` : ''}
-            </div>
-            
-            <p>We'll send you a reminder email before your workout time.</p>
-            <p><strong>Stay motivated and keep moving! 💪</strong></p>
-            
-            <p>Best regards,<br>
-            Your MoveSmartAI Team</p>
-          `
+          message: `Hi there! 👋
+
+Your workout reminder has been set up successfully!
+
+📅 Workout: ${title}
+📅 Date: ${workoutDateTime.toLocaleDateString()}
+⏰ Time: ${workoutDateTime.toLocaleTimeString()}
+⏱️ Duration: ${duration} minutes
+${notes ? `📝 Notes: ${notes}` : ''}
+
+We'll send you a reminder email before your workout time.
+
+Stay motivated and keep moving! 💪
+
+Best regards,
+Your MoveSmartAI Team`
         };
         
         await emailjs.send(

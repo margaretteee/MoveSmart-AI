@@ -12,8 +12,8 @@ const EMAIL_CONFIG = {
   // EmailJS Service ID - working Gmail service
   serviceId: 'service_8n6kzua',
   
-  // EmailJS Template ID - working template for reminders
-  templateId: 'template_d5h8k2j',
+  // EmailJS Template ID - using a basic template that should work
+  templateId: 'template_reminder',
   
   // Rate limiting
   limitRate: {
