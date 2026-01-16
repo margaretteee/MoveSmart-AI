@@ -823,83 +823,101 @@
                             }
                         },
                         newConversation: () => {
-                            console.log('🆕 Starting Botpress Cloud v3.5 new conversation...');
+                            console.log('🆕 FORCE NEW SESSION: Generating new user ID...');
                             
-                            // Step 1: Complete shutdown
                             try {
-                                // Close the chat first
-                                window.chatControls.close();
+                                // Step 1: Generate a new unique user ID to force new session
+                                const newUserId = 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+                                console.log('👤 New User ID:', newUserId);
                                 
-                                // Clear ALL Botpress related data including your specific bot ID
-                                const clearStorage = (storage) => {
-                                    const keys = Object.keys(storage);
-                                    keys.forEach(key => {
-                                        if (key.includes('botpress') || 
-                                            key.includes('webchat') || 
-                                            key.includes('bp-') ||
-                                            key.includes('JYT1GDIF') ||
-                                            key.includes('conversation') ||
-                                            key.includes('session')) {
-                                            storage.removeItem(key);
-                                            console.log('🗑️ Cleared:', key);
-                                        }
-                                    });
-                                };
-                                
-                                clearStorage(localStorage);
-                                clearStorage(sessionStorage);
-                                
-                                // Step 2: Destroy any existing Botpress instances
-                                if (window.botpress) {
-                                    try {
-                                        if (window.botpress.destroy) window.botpress.destroy();
-                                        if (window.botpress.close) window.botpress.close();
-                                        delete window.botpress;
-                                        delete window.botpressWebchat;
-                                        delete window.botpressWebChat;
-                                    } catch (e) {
-                                        console.warn('Botpress cleanup:', e);
-                                    }
-                                }
-                                
-                                // Step 3: Remove and reload the bot configuration script
-                                const configScript = document.querySelector('script[src*="JYT1GDIF"]');
-                                if (configScript) {
-                                    configScript.remove();
+                                // Step 2: Clear ALL storage completely
+                                try {
+                                    localStorage.clear();
+                                    sessionStorage.clear();
                                     
-                                    // Wait a moment then reload with cache bust
-                                    setTimeout(() => {
-                                        const newScript = document.createElement('script');
-                                        newScript.src = configScript.src.split('?')[0] + '?reset=' + Date.now();
-                                        newScript.defer = true;
-                                        document.head.appendChild(newScript);
-                                        
-                                        console.log('🔄 Reloaded bot configuration');
-                                        
-                                        // Step 4: Wait for script to load then reopen
-                                        setTimeout(() => {
-                                            window.chatControls.open();
-                                            console.log('✅ Fresh conversation started!');
-                                        }, 1000);
-                                        
-                                    }, 200);
-                                } else {
-                                    // Fallback: just reset and reopen
-                                    setTimeout(() => {
-                                        window.chatControls.reset();
-                                        setTimeout(() => {
-                                            window.chatControls.open();
-                                            console.log('✅ Conversation reset (fallback method)');
-                                        }, 500);
-                                    }, 200);
+                                    // Clear cookies that might store session info
+                                    document.cookie.split(";").forEach(function(c) { 
+                                        document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                                    });
+                                    
+                                    console.log('💥 Cleared all storage and cookies');
+                                } catch (e) {
+                                    console.warn('Storage clear error:', e);
                                 }
+                                
+                                // Step 3: Destroy current Botpress instance completely
+                                if (window.botpressWebchat) {
+                                    try {
+                                        window.botpressWebchat.destroy?.();
+                                        window.botpressWebchat.close?.();
+                                    } catch (e) { console.warn('Destroy error:', e); }
+                                }
+                                
+                                // Remove all Botpress DOM elements
+                                document.querySelectorAll('[id*="bp-"], [class*="bp-"], iframe[src*="botpress"], iframe[src*="webchat"]').forEach(el => {
+                                    el.remove();
+                                });
+                                
+                                // Delete window objects
+                                ['botpress', 'botpressWebchat', 'botpressWebChat', 'bp', 'webchat'].forEach(prop => {
+                                    delete window[prop];
+                                });
+                                
+                                // Step 4: Remove and recreate scripts with new user ID
+                                document.querySelectorAll('script[src*="botpress"], script[src*="bpcontent"]').forEach(script => {
+                                    script.remove();
+                                });
+                                
+                                // Wait then reload scripts with new user ID injection
+                                setTimeout(() => {
+                                    // Reload inject script
+                                    const injectScript = document.createElement('script');
+                                    injectScript.src = 'https://cdn.botpress.cloud/webchat/v3.5/inject.js';
+                                    injectScript.onload = () => {
+                                        console.log('✅ Inject script loaded');
+                                        
+                                        // Reload config script with new user ID
+                                        const configScript = document.createElement('script');
+                                        configScript.src = 'https://files.bpcontent.cloud/2026/01/06/07/20260106073239-JYT1GDIF.js?userId=' + newUserId + '&t=' + Date.now();
+                                        configScript.defer = true;
+                                        configScript.onload = () => {
+                                            console.log('✅ Config script loaded with new user ID');
+                                            
+                                            // Force new session by overriding user ID
+                                            setTimeout(() => {
+                                                if (window.botpressWebchat) {
+                                                    try {
+                                                        // Try to set new user ID if API allows
+                                                        if (window.botpressWebchat.configure) {
+                                                            window.botpressWebchat.configure({
+                                                                userId: newUserId,
+                                                                forceNewSession: true
+                                                            });
+                                                        }
+                                                        
+                                                        // Open fresh chat
+                                                        window.botpressWebchat.open?.();
+                                                        console.log('🎉 New conversation started with fresh user ID!');
+                                                        
+                                                    } catch (e) {
+                                                        console.error('Configuration error:', e);
+                                                        // Fallback: just open
+                                                        window.botpressWebchat.open?.();
+                                                    }
+                                                }
+                                            }, 500);
+                                        };
+                                        
+                                        document.head.appendChild(configScript);
+                                    };
+                                    
+                                    document.head.appendChild(injectScript);
+                                }, 300);
                                 
                             } catch (error) {
-                                console.error('❌ New conversation error:', error);
-                                // Emergency fallback
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 1000);
+                                console.error('❌ Session reset error:', error);
+                                // Ultimate fallback - reload page with timestamp to break cache
+                                window.location.href = window.location.href.split('?')[0] + '?reset=' + Date.now();
                             }
                         }
                     };
