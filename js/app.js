@@ -1009,7 +1009,6 @@ class MoveSmartAI {
   initCalendarReminder() {
     // Cache elements
     this.reminderBtn = document.getElementById('set-reminder-btn');
-    this.testEmailBtn = document.getElementById('test-email-btn');
     this.reminderModal = document.getElementById('calendar-reminder-modal');
     this.reminderForm = document.getElementById('reminder-form');
     this.reminderCloseBtn = this.reminderModal?.querySelector('.reminder-modal__close');
@@ -1020,7 +1019,6 @@ class MoveSmartAI {
 
     // Event listeners
     this.reminderBtn.addEventListener('click', () => this.openReminderModal());
-    this.testEmailBtn?.addEventListener('click', () => this.testEmailService());
     this.reminderCloseBtn?.addEventListener('click', () => this.closeReminderModal());
     this.reminderForm.addEventListener('submit', (e) => this.handleReminderSubmit(e));
 
@@ -1362,25 +1360,153 @@ Your MoveSmartAI Team 💪`,
     const timeUntilReminder = reminderDateTime.getTime() - now.getTime();
     
     if (timeUntilReminder > 0) {
-      // Schedule the email reminder
-      console.log(`⏰ Reminder scheduled for ${reminderDateTime.toLocaleString()} (in ${Math.round(timeUntilReminder / 1000 / 60)} minutes)`);
+      console.log(`⏰ Scheduling reminder for ${reminderDateTime.toLocaleString()}`);
       
-      setTimeout(async () => {
-        console.log('⏰ Time to send workout reminder!');
-        await this.sendEmailReminder(email, title, workoutDateTime, duration, notes);
-      }, timeUntilReminder);
-      
-      // Also store in localStorage for persistence (in case page is refreshed)
-      this.storeScheduledReminder({
-        email, title, workoutDateTime: workoutDateTime.toISOString(), 
-        duration, notes, reminderDateTime: reminderDateTime.toISOString()
-      });
+      // Use a webhook service that can actually schedule emails
+      try {
+        await this.scheduleReminderViaWebhook({
+          email,
+          title,
+          workoutDateTime: workoutDateTime.toISOString(),
+          reminderDateTime: reminderDateTime.toISOString(),
+          duration,
+          notes,
+          reminderMinutes
+        });
+        
+        console.log('✅ Reminder successfully scheduled via webhook service');
+        
+      } catch (error) {
+        console.error('❌ Failed to schedule reminder via webhook:', error);
+        
+        // Fallback: Use browser-based scheduling (limited but better than nothing)
+        this.scheduleReminderLocally(email, title, workoutDateTime, duration, notes, timeUntilReminder);
+      }
       
     } else {
-      console.warn('⚠️ Reminder time is in the past, cannot schedule future reminder');
-      // Show a friendly message to user
-      alert('Note: Your workout time is very soon or has passed. You\'ve received a confirmation email, but no reminder will be scheduled.');
+      console.warn('⚠️ Reminder time is in the past, sending immediate notification');
+      // Send immediate reminder instead
+      await this.sendEmailReminder(email, title, workoutDateTime, duration, notes);
     }
+  }
+
+  /**
+   * Schedule reminder via webhook service that can send emails at specified times
+   */
+  async scheduleReminderViaWebhook(reminderData) {
+    const schedulingPayload = {
+      email: reminderData.email,
+      subject: `🏋️‍♀️ Workout Reminder: ${reminderData.title}`,
+      message: this.generateReminderEmailContent(reminderData),
+      send_at: reminderData.reminderDateTime, // ISO format timestamp
+      _subject: `🏋️‍♀️ Workout Reminder: ${reminderData.title}`,
+      _replyto: reminderData.email,
+      reminder_type: 'workout_reminder',
+      workout_time: reminderData.workoutDateTime,
+      duration: reminderData.duration
+    };
+
+    // Try multiple scheduling services
+    const services = [
+      {
+        name: 'Formspree Scheduler',
+        url: 'https://formspree.io/f/xnnqlrpv',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Formspree-Schedule': reminderData.reminderDateTime
+        }
+      }
+    ];
+
+    for (const service of services) {
+      try {
+        const response = await fetch(service.url, {
+          method: 'POST',
+          headers: service.headers,
+          body: JSON.stringify(schedulingPayload)
+        });
+
+        if (response.ok) {
+          console.log(`✅ Reminder scheduled successfully via ${service.name}`);
+          return true;
+        } else {
+          console.warn(`⚠️ ${service.name} returned status ${response.status}`);
+        }
+      } catch (error) {
+        console.warn(`❌ ${service.name} failed:`, error);
+        continue;
+      }
+    }
+
+    throw new Error('All scheduling services failed');
+  }
+
+  /**
+   * Generate email content for reminder
+   */
+  generateReminderEmailContent(reminderData) {
+    const workoutTime = new Date(reminderData.workoutDateTime);
+    
+    return `Hi there! 👋
+
+🏋️‍♀️ WORKOUT REMINDER: ${reminderData.title}
+
+It's time to get moving! Your workout is scheduled for:
+
+📅 Date: ${workoutTime.toLocaleDateString()}
+⏰ Time: ${workoutTime.toLocaleTimeString()}
+⏱️ Duration: ${reminderData.duration} minutes
+${reminderData.notes ? `📝 Notes: ${reminderData.notes}` : ''}
+
+Ready to crush your workout? Here are some quick tips:
+
+💪 Find a comfortable space
+💧 Stay hydrated
+👂 Listen to your body
+😊 Have fun with it!
+
+Let's make today amazing! 
+
+Best regards,
+Your MoveSmartAI Team
+
+P.S. Visit https://margaretteee.github.io/MoveSmart-AI/ for more workouts!
+    
+---
+This is an automated reminder from MoveSmartAI. You scheduled this reminder on ${new Date().toLocaleDateString()}.`;
+  }
+
+  /**
+   * Fallback local scheduling (browser-based, limited effectiveness)
+   */
+  scheduleReminderLocally(email, title, workoutDateTime, duration, notes, timeUntilReminder) {
+    console.log('📱 Using fallback local scheduling (browser-based)');
+    
+    // Store in localStorage for persistence
+    this.storeScheduledReminder({
+      email, 
+      title, 
+      workoutDateTime: workoutDateTime.toISOString(), 
+      duration, 
+      notes, 
+      reminderDateTime: new Date(Date.now() + timeUntilReminder).toISOString(),
+      scheduled: new Date().toISOString()
+    });
+
+    // Set browser-based timer (works only if page stays open)
+    setTimeout(async () => {
+      console.log('⏰ Browser-based reminder triggered!');
+      await this.sendEmailReminder(email, title, workoutDateTime, duration, notes);
+      
+      // Also show browser notification as backup
+      this.showBrowserNotification(`🏋️‍♀️ ${title}`, workoutDateTime);
+      
+    }, timeUntilReminder);
+
+    // Show notification about limitations
+    setTimeout(() => {
+      console.log('📱 Note: For best results, consider setting up a calendar reminder as well');
+    }, 2000);
   }
   
   /**

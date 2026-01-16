@@ -161,14 +161,7 @@
                     <span class="reminder-btn__text">Set Reminder</span>
                 </button>
                 
-                <!-- Test Email Button (for development/testing) -->
-                <button class="reminder-btn" id="test-email-btn" style="margin-top: 10px; background: #10B981;" aria-describedby="test-email-desc">
-                    <span class="reminder-btn__icon">📧</span>
-                    <span class="reminder-btn__text">Test Email Service</span>
-                </button>
-                
                 <p id="reminder-desc" class="sr-only">Opens a form to create a workout reminder for your calendar</p>
-                <p id="test-email-desc" class="sr-only">Tests the email reminder functionality</p>
             </section>
 
             <!-- Safety Notice -->
@@ -705,12 +698,17 @@
                 </button>
                 
                 <div id="reminder-success" class="reminder-success" style="display: none;">
-                    <h3>✅ Email reminder scheduled!</h3>
-                    <p>You'll receive an email reminder at your specified time. We've also created an Outlook calendar file for you.</p>
+                    <h3>✅ Workout reminder scheduled!</h3>
+                    <p>🎉 Great! Your workout reminder has been set up successfully!</p>
+                    <div style="background: #f0fff0; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                        <p><strong>📧 Email Confirmation:</strong> You'll receive a confirmation email shortly.</p>
+                        <p><strong>⏰ Reminder Email:</strong> We'll send you a reminder email before your scheduled workout time.</p>
+                        <p><strong>📱 Tip:</strong> Also add this to your calendar for the best experience!</p>
+                    </div>
                     <div class="reminder-actions">
                         <button type="button" id="download-outlook" class="action-btn action-btn--outlook">
                             <span>📅</span>
-                            <span>Download for Outlook</span>
+                            <span>Download for Calendar</span>
                         </button>
                     </div>
                 </div>
