@@ -754,14 +754,15 @@
     <!-- Email configuration -->
     <script src="js/config.js"></script>
     
-    <!-- Botpress Webchat with Reset Support -->
+    <!-- Botpress Webchat with Enhanced Reset Support -->
     <script>
-        // Clear Botpress data on page load to ensure fresh conversations
+        // Aggressive Botpress data clearing on page load
         (function() {
-            console.log('🔄 Initializing fresh Botpress session...');
+            console.log('🔄 Forcing fresh Botpress session...');
             
-            // Clear all Botpress-related storage on every page load
+            // Method 1: Clear all storage types
             try {
+                // Clear localStorage and sessionStorage
                 const storageTypes = ['localStorage', 'sessionStorage'];
                 storageTypes.forEach(storageType => {
                     const storage = window[storageType];
@@ -776,7 +777,10 @@
                                 key.includes('conversation') ||
                                 key.includes('JYT1GDIF') ||
                                 key.startsWith('bp_') ||
-                                key.includes('chat-state')
+                                key.includes('chat-state') ||
+                                key.includes('chat') ||
+                                key.includes('msg') ||
+                                key.includes('history')
                             )) {
                                 keysToRemove.push(key);
                             }
@@ -785,48 +789,110 @@
                         console.log(`✅ Cleared ${keysToRemove.length} ${storageType} keys`);
                     }
                 });
+                
+                // Method 2: Clear IndexedDB (where Botpress v3.5 often stores data)
+                if ('indexedDB' in window) {
+                    indexedDB.databases().then(databases => {
+                        databases.forEach(db => {
+                            if (db.name && (
+                                db.name.includes('botpress') || 
+                                db.name.includes('webchat') ||
+                                db.name.includes('bp-') ||
+                                db.name.includes('JYT1GDIF')
+                            )) {
+                                console.log('🗑️ Clearing IndexedDB:', db.name);
+                                indexedDB.deleteDatabase(db.name);
+                            }
+                        });
+                    }).catch(e => console.warn('IndexedDB clear error:', e));
+                }
+                
+                // Method 3: Clear cookies that might contain Botpress data
+                document.cookie.split(";").forEach(function(cookie) {
+                    const eqPos = cookie.indexOf("=");
+                    const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+                    if (name && (
+                        name.includes('botpress') || 
+                        name.includes('webchat') || 
+                        name.includes('bp-') ||
+                        name.includes('JYT1GDIF')
+                    )) {
+                        console.log('🗑️ Clearing cookie:', name);
+                        document.cookie = name + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+                    }
+                });
+                
             } catch (e) {
                 console.warn('Storage clear error:', e);
             }
             
-            // Prevent botpress from persisting conversations
+            // Method 4: Override Botpress configuration to disable persistence
             window.botpressWebchatConfig = {
                 persistConversation: false,
                 enableConversationPersistence: false,
-                clearStorageOnLoad: true
+                clearStorageOnLoad: true,
+                resetOnRefresh: true
             };
+            
+            // Method 5: Add timestamp to force new session
+            window.BotpressSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            console.log('🆕 Generated new session ID:', window.BotpressSessionId);
+            
         })();
     </script>
     
-    <!-- Load Botpress scripts -->
-    <script src="https://cdn.botpress.cloud/webchat/v3.5/inject.js"></script>
-    <script src="https://files.bpcontent.cloud/2026/01/06/07/20260106073239-JYT1GDIF.js" defer></script>
+    <!-- Load Botpress scripts with cache-busting for fresh sessions -->
+    <script>
+        // Add cache-busting timestamp to prevent cached conversations
+        const timestamp = Date.now();
+        const script1 = document.createElement('script');
+        script1.src = 'https://cdn.botpress.cloud/webchat/v3.5/inject.js?t=' + timestamp;
+        document.head.appendChild(script1);
+        
+        script1.onload = function() {
+            const script2 = document.createElement('script');
+            script2.src = 'https://files.bpcontent.cloud/2026/01/06/07/20260106073239-JYT1GDIF.js?t=' + timestamp;
+            script2.defer = true;
+            document.head.appendChild(script2);
+        };
+    </script>
     
     <!-- Main application -->
     <script src="js/app.js"></script>
     
-    <!-- Botpress initialization with conversation reset -->
+    <!-- Enhanced Botpress initialization with forced reset -->
     <script>
         window.addEventListener('load', function() {
-            console.log('🔄 Page loaded, initializing Botpress...');
+            console.log('🔄 Page loaded, forcing fresh Botpress initialization...');
             
             // Wait for Botpress to load
-            setTimeout(function() {
+            let attempts = 0;
+            const checkBotpress = () => {
+                attempts++;
                 if (typeof window.botpress !== 'undefined') {
                     console.log('✅ Botpress loaded successfully');
                     
-                    // Override default behavior to prevent persistence
-                    if (window.botpress.init) {
-                        const originalInit = window.botpress.init;
-                        window.botpress.init = function(config) {
-                            config = config || {};
-                            config.persistConversation = false;
-                            config.enableConversationPersistence = false;
-                            return originalInit.call(this, config);
-                        };
-                    }
+                    // Force clear any existing conversation state
+                    setTimeout(() => {
+                        if (window.botpress.sendEvent) {
+                            window.botpress.sendEvent({ type: 'reset' });
+                        }
+                        if (window.botpress.clearHistory) {
+                            window.botpress.clearHistory();
+                        }
+                    }, 500);
                     
-                    // Add chat controls for manual testing
+                    // Override methods to prevent persistence
+                    const originalSendEvent = window.botpress.sendEvent;
+                    window.botpress.sendEvent = function(event) {
+                        // Intercept and modify events to disable persistence
+                        if (event && typeof event === 'object') {
+                            event.persistConversation = false;
+                        }
+                        return originalSendEvent.call(this, event);
+                    };
+                    
+                    // Add enhanced chat controls
                     window.chatControls = {
                         open: () => {
                             if (window.botpress?.open) {
@@ -838,39 +904,92 @@
                                 window.botpress.close();
                             }
                         },
-                        // Simple but effective reset method
+                        // Nuclear option - complete page reload with cache clearing
                         reset: () => {
-                            console.log('🔄 Resetting conversation...');
-                            window.location.reload();
+                            console.log('🔄 HARD RESET: Clearing everything and reloading...');
+                            
+                            // Clear all possible storage
+                            try {
+                                localStorage.clear();
+                                sessionStorage.clear();
+                                
+                                // Clear all cookies
+                                document.cookie.split(";").forEach(function(c) { 
+                                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                                });
+                                
+                                // Clear service workers
+                                if ('serviceWorker' in navigator) {
+                                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                                        registrations.forEach(registration => registration.unregister());
+                                    });
+                                }
+                                
+                                // Clear caches
+                                if ('caches' in window) {
+                                    caches.keys().then(cacheNames => {
+                                        cacheNames.forEach(cacheName => caches.delete(cacheName));
+                                    });
+                                }
+                                
+                            } catch (e) {
+                                console.warn('Clear error:', e);
+                            }
+                            
+                            // Force reload with no cache
+                            setTimeout(() => {
+                                window.location.reload(true);
+                            }, 100);
                         }
                     };
                     
+                } else if (attempts < 10) {
+                    console.log(`⏳ Waiting for Botpress... (${attempts}/10)`);
+                    setTimeout(checkBotpress, 1000);
                 } else {
-                    console.warn('⚠️ Botpress failed to load');
-                    // Retry once after a longer delay
-                    setTimeout(() => {
-                        if (typeof window.botpress === 'undefined') {
-                            console.error('❌ Botpress failed to load after retry');
-                        }
-                    }, 3000);
+                    console.error('❌ Botpress failed to load after 10 attempts');
                 }
-            }, 1500);
+            };
+            
+            checkBotpress();
         });
         
-        // Additional cleanup on page unload/reload
+        // Clear storage before page unloads
         window.addEventListener('beforeunload', function() {
             try {
-                // Clear storage before page unloads
-                const keysToRemove = [];
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && (key.includes('bp-') || key.includes('botpress') || key.includes('webchat'))) {
-                        keysToRemove.push(key);
+                // Aggressive cleanup
+                ['localStorage', 'sessionStorage'].forEach(storageType => {
+                    const storage = window[storageType];
+                    if (storage) {
+                        const keys = Object.keys(storage);
+                        keys.forEach(key => {
+                            if (key.includes('botpress') || key.includes('webchat') || key.includes('bp-') || key.includes('JYT1GDIF')) {
+                                storage.removeItem(key);
+                            }
+                        });
                     }
-                }
-                keysToRemove.forEach(key => localStorage.removeItem(key));
+                });
             } catch (e) {
-                // Silent fail - browser might be closing
+                // Silent fail
+            }
+        });
+        
+        // Force clear on page visibility change (tab switching)
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'visible') {
+                setTimeout(() => {
+                    if (window.chatControls && window.chatControls.reset) {
+                        console.log('🔄 Tab became visible - checking for chat reset need');
+                        // Only reset if there's stored conversation data
+                        const hasStoredData = Object.keys(localStorage).some(key => 
+                            key.includes('botpress') || key.includes('webchat') || key.includes('JYT1GDIF')
+                        );
+                        if (hasStoredData) {
+                            console.log('🔄 Found stored chat data - forcing reset');
+                            window.chatControls.reset();
+                        }
+                    }
+                }, 1000);
             }
         });
     </script>
