@@ -47,6 +47,7 @@ class MoveSmartAI {
       this.initIntersectionObserver();
       this.initAccessibilityFeatures();
       this.initCalendarReminder();
+      this.initBotpressChat();
       
       // Check for any previously scheduled reminders
       this.checkScheduledReminders();
@@ -811,10 +812,18 @@ class MoveSmartAI {
     console.log('💬 Opening chat widget...');
     
     // Check if Botpress webchat is loaded
-    if (typeof window.botpress !== 'undefined' && window.botpress.open) {
+    if (typeof window.botpress !== 'undefined') {
       try {
         // Open the Botpress webchat
-        window.botpress.open();
+        if (window.botpress.open) {
+          window.botpress.open();
+        }
+        
+        // Ensure the webchat is properly initialized
+        if (window.botpress.init) {
+          window.botpress.init();
+        }
+        
         this.trackUserInteraction('chat_opened', 'botpress_widget');
         this.announceToScreenReader('Chat widget opened');
         
@@ -822,19 +831,98 @@ class MoveSmartAI {
         console.warn('Error opening Botpress widget:', error);
         this.showChatFallback();
       }
+    } else if (typeof window.botpressWebChat !== 'undefined') {
+      // Try alternative Botpress WebChat method
+      try {
+        window.botpressWebChat.sendEvent({ type: 'show' });
+        this.trackUserInteraction('chat_opened', 'botpress_widget_alt');
+      } catch (error) {
+        console.warn('Error with alternative method:', error);
+        this.showChatFallback();
+      }
     } else {
-      // Try alternative methods
-      if (typeof window.botpressWebChat !== 'undefined') {
-        try {
-          window.botpressWebChat.sendEvent({ type: 'show' });
-          this.trackUserInteraction('chat_opened', 'botpress_widget_alt');
-        } catch (error) {
-          console.warn('Error with alternative method:', error);
+      console.warn('Botpress not found, trying to initialize...');
+      // Wait a bit for Botpress to load and try again
+      setTimeout(() => {
+        if (typeof window.botpress !== 'undefined') {
+          this.openChatWidget();
+        } else {
           this.showChatFallback();
         }
-      } else {
-        console.warn('Botpress not found');
-        this.showChatFallback();
+      }, 1000);
+    }
+  }
+
+  /**
+   * Start new conversation in chatbot
+   */
+  startNewConversation() {
+    console.log('🔄 Starting new conversation...');
+    
+    if (typeof window.botpress !== 'undefined') {
+      try {
+        // Reset the conversation
+        if (window.botpress.sendEvent) {
+          window.botpress.sendEvent({ type: 'reset' });
+        }
+        
+        // Clear conversation history
+        if (window.botpress.clear) {
+          window.botpress.clear();
+        }
+        
+        // Open the chat widget
+        if (window.botpress.open) {
+          window.botpress.open();
+        }
+        
+        console.log('✅ New conversation started');
+        this.trackUserInteraction('chat_new_conversation', 'botpress_reset');
+        
+      } catch (error) {
+        console.warn('Error starting new conversation:', error);
+        // Fallback: just open the chat
+        this.openChatWidget();
+      }
+    } else if (typeof window.botpressWebChat !== 'undefined') {
+      try {
+        // Alternative method for Botpress WebChat
+        window.botpressWebChat.sendEvent({ type: 'reset' });
+        window.botpressWebChat.sendEvent({ type: 'show' });
+      } catch (error) {
+        console.warn('Error with alternative new conversation method:', error);
+        this.openChatWidget();
+      }
+    } else {
+      console.warn('Botpress not available for new conversation');
+      this.openChatWidget();
+    }
+  }
+
+  /**
+   * Close chatbot
+   */
+  closeChatWidget() {
+    console.log('❌ Closing chat widget...');
+    
+    if (typeof window.botpress !== 'undefined') {
+      try {
+        if (window.botpress.close) {
+          window.botpress.close();
+        } else if (window.botpress.hide) {
+          window.botpress.hide();
+        }
+        
+        this.trackUserInteraction('chat_closed', 'botpress_widget');
+        
+      } catch (error) {
+        console.warn('Error closing Botpress widget:', error);
+      }
+    } else if (typeof window.botpressWebChat !== 'undefined') {
+      try {
+        window.botpressWebChat.sendEvent({ type: 'hide' });
+      } catch (error) {
+        console.warn('Error hiding chat with alternative method:', error);
       }
     }
   }
@@ -1040,6 +1128,58 @@ class MoveSmartAI {
     this.loadReminderPreferences();
     
     console.log('📅 Calendar reminder initialized');
+  }
+
+  /**
+   * Initialize Botpress Chat Integration
+   */
+  initBotpressChat() {
+    console.log('💬 Initializing Botpress chat...');
+    
+    // Wait for Botpress to be fully loaded
+    const initBotpress = () => {
+      if (typeof window.botpress !== 'undefined') {
+        console.log('✅ Botpress loaded successfully');
+        
+        // Set up event listeners for Botpress events
+        try {
+          // Listen for chat events
+          if (window.botpress.on) {
+            window.botpress.on('webchat:opened', () => {
+              console.log('📬 Chat opened');
+              this.trackUserInteraction('chat_opened', 'user_action');
+            });
+            
+            window.botpress.on('webchat:closed', () => {
+              console.log('📭 Chat closed');
+              this.trackUserInteraction('chat_closed', 'user_action');
+            });
+            
+            window.botpress.on('message', (event) => {
+              console.log('💬 New message:', event);
+              this.trackUserInteraction('chat_message', 'user_sent');
+            });
+          }
+          
+          // Expose global chat functions for easy access
+          window.moveSmartAI = {
+            openChat: () => this.openChatWidget(),
+            newConversation: () => this.startNewConversation(),
+            closeChat: () => this.closeChatWidget()
+          };
+          
+        } catch (error) {
+          console.warn('Error setting up Botpress event listeners:', error);
+        }
+        
+      } else {
+        console.warn('⚠️ Botpress not yet loaded, retrying...');
+        setTimeout(initBotpress, 500);
+      }
+    };
+    
+    // Start initialization with a small delay to ensure DOM is ready
+    setTimeout(initBotpress, 100);
   }
 
   /**
