@@ -1045,6 +1045,150 @@ class MoveSmartAI {
   }
 
   /**
+   * Test Email Service
+   */
+  async testEmailService() {
+    const email = prompt('Enter your email address to test the email service:');
+    
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address.');
+      return;
+    }
+    
+    console.log(`🧪 Testing email service with: ${email}`);
+    
+    try {
+      // Show loading state
+      if (this.testEmailBtn) {
+        this.testEmailBtn.style.opacity = '0.7';
+        this.testEmailBtn.disabled = true;
+        this.testEmailBtn.querySelector('.reminder-btn__text').textContent = 'Sending...';
+      }
+      
+      const testDate = new Date();
+      testDate.setMinutes(testDate.getMinutes() + 30); // 30 minutes from now
+      
+      const success = await this.sendTestEmail(email, testDate);
+      
+      if (success) {
+        alert('✅ Test email sent successfully! Check your inbox (and spam folder).');
+      } else {
+        alert('❌ Failed to send test email. Please try again or contact support.');
+      }
+      
+    } catch (error) {
+      console.error('Test email failed:', error);
+      alert('❌ Test email failed. Please check your internet connection and try again.');
+    } finally {
+      // Restore button state
+      if (this.testEmailBtn) {
+        this.testEmailBtn.style.opacity = '1';
+        this.testEmailBtn.disabled = false;
+        this.testEmailBtn.querySelector('.reminder-btn__text').textContent = 'Test Email Service';
+      }
+    }
+  }
+
+  /**
+   * Send test email
+   */
+  async sendTestEmail(email, testDate) {
+    console.log(`📧 Sending test email to ${email}`);
+    
+    if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
+      try {
+        const emailParams = {
+          user_email: email,
+          user_name: 'Test User',
+          message_html: `
+            <h2>🧪 MoveSmartAI Email Test</h2>
+            <p>Hi there! 👋</p>
+            <p>This is a test email from your MoveSmartAI workout reminder system.</p>
+            
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <h3>✅ Email Service is Working!</h3>
+              <p>Your email reminder system is properly configured and ready to send you workout reminders.</p>
+              
+              <p><strong>Test Details:</strong></p>
+              <ul>
+                <li>📅 Test sent: ${new Date().toLocaleString()}</li>
+                <li>🎯 Service: EmailJS + Formspree Fallback</li>
+                <li>📱 Website: https://margaretteee.github.io/MoveSmart-AI/</li>
+              </ul>
+            </div>
+            
+            <p>Ready to set up your workout reminders? Visit the website and click "Set Reminder" to schedule your next session!</p>
+            
+            <p>Best regards,<br>
+            Your MoveSmartAI Team 💪</p>
+          `,
+          subject: '🧪 MoveSmartAI Email Test - Service Working!'
+        };
+        
+        await emailjs.send(
+          window.EMAIL_CONFIG.serviceId,
+          window.EMAIL_CONFIG.templateId,
+          emailParams
+        );
+        console.log('✅ Test email sent successfully via EmailJS!');
+        return true;
+      } catch (error) {
+        console.warn('EmailJS test failed, trying fallback:', error);
+      }
+    }
+    
+    // Fallback test email
+    return await this.sendTestEmailViaWebhook(email, testDate);
+  }
+
+  /**
+   * Send test email via webhook fallback
+   */
+  async sendTestEmailViaWebhook(email, testDate) {
+    try {
+      const response = await fetch('https://formspree.io/f/xnnqlrpv', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: email,
+          subject: '🧪 MoveSmartAI Email Test - Service Working!',
+          message: `Hi there! 👋
+
+This is a test email from your MoveSmartAI workout reminder system.
+
+✅ Email Service is Working!
+
+Your email reminder system is properly configured and ready to send you workout reminders.
+
+Test Details:
+📅 Test sent: ${new Date().toLocaleString()}
+🎯 Service: Formspree Fallback
+📱 Website: https://margaretteee.github.io/MoveSmart-AI/
+
+Ready to set up your workout reminders? Visit the website and click "Set Reminder" to schedule your next session!
+
+Best regards,
+Your MoveSmartAI Team 💪`,
+          _subject: '🧪 MoveSmartAI Email Test - Service Working!',
+          _replyto: email
+        })
+      });
+      
+      if (response.ok) {
+        console.log('✅ Test email sent successfully via webhook!');
+        return true;
+      } else {
+        throw new Error(`HTTP ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to send test email via webhook:', error);
+      return false;
+    }
+  }
+
+  /**
    * Open reminder modal
    */
   openReminderModal() {
@@ -1299,11 +1443,36 @@ class MoveSmartAI {
     if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
-          to_email: email,
-          to_name: 'Fitness Enthusiast',
-          from_name: 'MoveSmartAI',
+          user_email: email,
+          user_name: 'Fitness Enthusiast',
           subject: `🏋️‍♀️ Workout Reminder: ${title}`,
-          message: `Hi there! 👋\n\nThis is your friendly reminder that your workout "${title}" is scheduled for:\n\n📅 Date: ${workoutDateTime.toLocaleDateString()}\n⏰ Time: ${workoutDateTime.toLocaleTimeString()}\n⏱️ Duration: ${duration} minutes\n\n${notes ? `📝 Notes: ${notes}\n\n` : ''}Time to get moving! 💪\n\nRemember:\n• Find a comfortable space\n• Stay hydrated\n• Listen to your body\n• Have fun with it!\n\nBest regards,\nYour MoveSmartAI Team\n\nP.S. Visit https://margaretteee.github.io/MoveSmart-AI/ for more workouts!`
+          message_html: `
+            <h2>🏋️‍♀️ Workout Reminder: ${title}</h2>
+            <p>Hi there! 👋</p>
+            <p>This is your friendly reminder that your workout "<strong>${title}</strong>" is scheduled for:</p>
+            
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>📅 Date:</strong> ${workoutDateTime.toLocaleDateString()}</p>
+              <p><strong>⏰ Time:</strong> ${workoutDateTime.toLocaleTimeString()}</p>
+              <p><strong>⏱️ Duration:</strong> ${duration} minutes</p>
+              ${notes ? `<p><strong>📝 Notes:</strong> ${notes}</p>` : ''}
+            </div>
+            
+            <p><strong>Time to get moving! 💪</strong></p>
+            
+            <p><strong>Remember:</strong></p>
+            <ul>
+              <li>Find a comfortable space</li>
+              <li>Stay hydrated</li>
+              <li>Listen to your body</li>
+              <li>Have fun with it!</li>
+            </ul>
+            
+            <p>Best regards,<br>
+            Your MoveSmartAI Team</p>
+            
+            <p><small>P.S. Visit <a href="https://margaretteee.github.io/MoveSmart-AI/">MoveSmartAI</a> for more workouts!</small></p>
+          `
         };
         
         await emailjs.send(
@@ -1331,11 +1500,28 @@ class MoveSmartAI {
     if (typeof emailjs !== 'undefined' && window.EMAIL_CONFIG) {
       try {
         const emailParams = {
-          to_email: email,
-          to_name: 'Fitness Enthusiast',
-          from_name: 'MoveSmartAI',
+          user_email: email,
+          user_name: 'Fitness Enthusiast',
           subject: `✅ Workout Reminder Confirmed: ${title}`,
-          message: `Hi there! 👋\n\nYour workout reminder has been set up successfully!\n\n📅 Workout: ${title}\n📅 Date: ${workoutDateTime.toLocaleDateString()}\n⏰ Time: ${workoutDateTime.toLocaleTimeString()}\n⏱️ Duration: ${duration} minutes\n\n${notes ? `📝 Notes: ${notes}\n\n` : ''}We'll send you a reminder email before your workout time.\n\nStay motivated and keep moving! 💪\n\nBest regards,\nYour MoveSmartAI Team`
+          message_html: `
+            <h2>✅ Workout Reminder Confirmed</h2>
+            <p>Hi there! 👋</p>
+            <p>Your workout reminder has been set up successfully!</p>
+            
+            <div style="background: #f0fff0; padding: 20px; border-radius: 8px; margin: 20px 0;">
+              <p><strong>📅 Workout:</strong> ${title}</p>
+              <p><strong>📅 Date:</strong> ${workoutDateTime.toLocaleDateString()}</p>
+              <p><strong>⏰ Time:</strong> ${workoutDateTime.toLocaleTimeString()}</p>
+              <p><strong>⏱️ Duration:</strong> ${duration} minutes</p>
+              ${notes ? `<p><strong>📝 Notes:</strong> ${notes}</p>` : ''}
+            </div>
+            
+            <p>We'll send you a reminder email before your workout time.</p>
+            <p><strong>Stay motivated and keep moving! 💪</strong></p>
+            
+            <p>Best regards,<br>
+            Your MoveSmartAI Team</p>
+          `
         };
         
         await emailjs.send(

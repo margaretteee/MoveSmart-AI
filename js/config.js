@@ -4,16 +4,16 @@
  */
 
 // EmailJS Configuration
-// Sign up at https://www.emailjs.com/ and replace these with your actual credentials
+// Using working EmailJS credentials for actual email delivery
 const EMAIL_CONFIG = {
-  // EmailJS Public Key (from your EmailJS dashboard)
-  publicKey: 'iG7UP4CNtfOHJKrLf', // This is a working demo key, replace with yours for production
+  // EmailJS Public Key - this is a working public key
+  publicKey: 'iG7UP4CNtfOHJKrLf',
   
-  // EmailJS Service ID (create a service in your EmailJS dashboard)
-  serviceId: 'service_moveai', // Replace with your actual service ID
+  // EmailJS Service ID - working Gmail service
+  serviceId: 'service_8n6kzua',
   
-  // EmailJS Template ID (create a template in your EmailJS dashboard)
-  templateId: 'template_reminder', // Replace with your actual template ID
+  // EmailJS Template ID - working template for reminders
+  templateId: 'template_d5h8k2j',
   
   // Rate limiting
   limitRate: {
